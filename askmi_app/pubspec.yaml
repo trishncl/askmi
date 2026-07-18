@@ -12,6 +12,9 @@ dependencies:
   cupertino_icons: ^1.0.6
   google_fonts: ^6.2.1
   google_sign_in: ^6.3.0
+  fl_chart: ^0.68.0
+  shimmer: ^3.0.0
+  
 
   # Firebase — Spark (free) plan only, no Cloud Functions/Blaze required
   firebase_core: ^3.6.0
@@ -22,7 +25,7 @@ dependencies:
   provider: ^6.1.2
 
   # Utilities
-  intl: ^0.19.0
+  intl: ^0.20.3
 
   # Reports / generated outputs (Owner Reports page, Phase 4)
   csv: ^6.0.0

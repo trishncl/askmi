@@ -31,6 +31,9 @@ class AppColors {
   );
 
   // Neutrals — not in the brief, but every other screen still needs these
+  // Neutrals — not in the brief, but every other screen still needs these
+  static const bg = Color(0xFFF7F9FB);   // app scaffold background
+  static const card = Colors.white;      // surface for cards/sheets
   static const textDark = Color(0xFF11263C);
   static const textGray = Color(0xFF6C7A89);
   static const border = Color(0xFFE6EBF2);

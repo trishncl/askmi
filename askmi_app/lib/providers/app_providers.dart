@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../repositories/users_repository.dart';
 import '../services/auth_service.dart';
+import '../core/constants/branch_constants.dart';
 
 /// PHASE 2 — exposes the Firebase auth stream reactively. BranchScope
 /// (the Owner's branch filter) still gets added in Phase 4 — there's no
@@ -83,5 +84,25 @@ class UserProfileProvider extends ChangeNotifier {
     _sub?.cancel();
     _authState.removeListener(_onAuthChanged);
     super.dispose();
+  }
+}
+
+/// PHASE 4 — which branch the Owner is currently filtering the dashboard
+/// to. Every dashboard/sales/inventory page reads this instead of keeping
+/// its own copy, so the AppBar dropdown drives all of them at once.
+///
+/// In Phase 5 the Manager shell will lock this to the manager's own branch
+/// and hide the selector entirely.
+class BranchScope extends ChangeNotifier {
+  String _selected = kAllBranches;
+  String get selected => _selected;
+
+  /// Null when "All Branches" — repositories treat null as "don't filter".
+  String? get filterOrNull => _selected == kAllBranches ? null : _selected;
+
+  void select(String branch) {
+    if (branch == _selected) return;
+    _selected = branch;
+    notifyListeners();
   }
 }

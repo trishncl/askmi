@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../providers/app_providers.dart';
 import 'login_page.dart';
 import 'signed_in_placeholder_page.dart';
+import '../shell/owner_shell.dart';
 
 /// PHASE 2 — root routing widget. Splash's timer sends everyone here
 /// (signed in or not) after the intro animation; from this point on,
@@ -43,7 +44,17 @@ class AuthGate extends StatelessWidget {
     // PHASE 4/5 will replace this with real role-based routing:
     //   switch (profile.role) { case 'Owner': return OwnerShell(); ... }
     // For now, this confirms sign-in + role lookup both work end-to-end.
-    return SignedInPlaceholderPage(profile: profileState.profile!);
+    final profile = profileState.profile!;
+    switch (profile.role) {
+      case 'Owner':
+        return OwnerShell(profile: profile);
+      // PHASE 5 adds ManagerShell and CashierPosPage here. Until then those
+      // roles land on the placeholder rather than being handed the Owner's
+      // shell — giving a Cashier the Owner UI would be a real privilege leak,
+      // not just a cosmetic bug.
+      default:
+        return SignedInPlaceholderPage(profile: profile);
+    }
   }
 }
 
