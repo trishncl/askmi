@@ -41,6 +41,7 @@ class UserProfileProvider extends ChangeNotifier {
   UserModel? profile;
   bool loading = true;
   bool notConfigured = false;
+  bool deactivated = false;
 
   UserProfileProvider(this._authState, {UsersRepository? usersRepository})
       : _usersRepository = usersRepository ?? UsersRepository() {
@@ -56,6 +57,7 @@ class UserProfileProvider extends ChangeNotifier {
       profile = null;
       loading = false;
       notConfigured = false;
+      deactivated = false;
       notifyListeners();
       return;
     }
@@ -66,6 +68,11 @@ class UserProfileProvider extends ChangeNotifier {
     _sub = _usersRepository.watchByUid(uid).listen((user) {
       profile = user;
       notConfigured = user == null;
+      // A deactivated account must not reach any shell. Because this is a
+      // live stream, an Owner flipping `active` to false takes effect
+      // immediately — the user gets kicked to the deactivated screen
+      // mid-session, without needing to sign out first.
+      deactivated = user != null && !user.active;
       loading = false;
       notifyListeners();
     });
