@@ -16,6 +16,9 @@ class AALomiApp extends StatelessWidget {
         ChangeNotifierProvider<AuthState>(
           create: (context) => AuthState(context.read<AuthService>()),
         ),
+        ChangeNotifierProvider<UserProfileProvider>(
+          create: (context) => UserProfileProvider(context.read<AuthState>()),
+        ),
       ],
       child: MaterialApp(
         title: "AA's Lomi",

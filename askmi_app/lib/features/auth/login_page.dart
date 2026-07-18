@@ -5,7 +5,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_logo.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../../services/auth_service.dart';
-import 'signed_in_placeholder_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -60,11 +59,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const SignedInPlaceholderPage()),
-        );
-      }
+      // No navigation here on purpose: this screen is rendered BY AuthGate
+      // when signed out. Once sign-in succeeds, AuthState notifies, AuthGate
+      // rebuilds, and it swaps this screen out for whatever comes next —
+      // no Navigator push/pop needed, so there's no race to get wrong.
     } on Exception catch (e) {
       setState(() => _error = _friendlyError(e));
     } finally {
@@ -109,6 +107,9 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   }
 
   void _showCreateAccountInfo() {
+    // Deliberately NOT a public signup form — see the earlier architecture
+    // decision: every account (Owner/Manager/Cashier) is provisioned by
+    // the Owner via Settings, once that's built in Phase 4.
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -124,17 +125,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     );
   }
 
-  void _showGoogleComingSoon() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google Sign-In is coming soon.')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
+          // Background: soft gradient + a couple of very low-opacity
+          // decorative shapes, per the brief.
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -168,7 +165,12 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                     ),
                   ),
                   const SizedBox(height: 6),
-                  
+                  Text(
+                    'Sign in to continue discovering delicious meals.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(fontSize: 14, color: AppColors.textGray),
+                  ),
+                  const SizedBox(height: 28),
 
                   AnimatedBuilder(
                     animation: _cardController,
@@ -236,34 +238,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                             label: 'Sign In',
                             loading: _loading,
                             onPressed: _loading ? null : _signIn,
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              const Expanded(child: Divider()),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
-                                child: Text('or', style: GoogleFonts.poppins(color: AppColors.textGray)),
-                              ),
-                              const Expanded(child: Divider()),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: OutlinedButton.icon(
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.textDark,
-                                side: const BorderSide(color: AppColors.border),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              onPressed: _showGoogleComingSoon,
-                              icon: const Icon(Icons.g_mobiledata_rounded, size: 26),
-                              label: const Text('Continue with Google'),
-                            ),
                           ),
                         ],
                       ),

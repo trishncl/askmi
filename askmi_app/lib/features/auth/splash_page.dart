@@ -1,17 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_logo.dart';
-import '../../services/auth_service.dart';
-import 'login_page.dart';
-import 'signed_in_placeholder_page.dart';
+import 'auth_gate.dart';
 
-/// Splash screen: logo scale-in + fade, a subtle continuous float standing
-/// in for "rising steam," then an automatic fade-transition onward. No
-/// buttons here on purpose — this replaced an earlier Sign-In/Register
-/// landing page concept per the updated design brief.
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
 
@@ -56,12 +49,10 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   void _scheduleNavigation() {
     Timer(const Duration(milliseconds: 2200), () {
       if (!mounted) return;
-      final isSignedIn = context.read<AuthService>().currentUser != null;
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 1400),
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              isSignedIn ? const SignedInPlaceholderPage() : const LoginPage(),
+          pageBuilder: (context, animation, secondaryAnimation) => const AuthGate(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) =>
               FadeTransition(opacity: animation, child: child),
         ),
