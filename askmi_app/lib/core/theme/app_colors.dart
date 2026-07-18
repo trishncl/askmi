@@ -1,33 +1,46 @@
 import 'package:flutter/material.dart';
 
-/// Brand palette from the AA's Lomi logo: teal (bowl) = primary/chrome,
-/// orange (steam) = accent, reserved ONLY for primary call-to-action
-/// buttons. Already finalized — nothing here should change without a
-/// deliberate design decision, unlike the feature files in lib/features/.
+/// AA's Lomi brand palette — finalized from the design brief. Every color
+/// used anywhere in the app should trace back to one of these; don't add
+/// new decorative colors ad hoc in a feature file.
 class AppColors {
   AppColors._();
 
-  static const primary = Color(0xFF1E9E8E);
-  static const primaryDark = Color(0xFF15776A);
-  static const primaryLight = Color(0xFF6FC9BB);
-  static const primarySoft = Color(0xFFE6F7F4);
+  // Primary
+  static const teal = Color(0xFF2FAF9A);
+  static const orange = Color(0xFFF47A20);
+  static const red = Color(0xFFE64A19);
 
-  static const accent = Color(0xFFF2762E);
-  static const accentDark = Color(0xFFD65A1A);
-  static const accentSoft = Color(0xFFFDEEE3);
+  // Secondary
+  static const cream = Color(0xFFFFF8F0);
+  static const white = Color(0xFFFFFFFF);
 
-  static const bg = Color(0xFFF4F7FB);
-  static const card = Colors.white;
+  // Accent
+  static const gold = Color(0xFFF4B400);
+
+  // Gradients
+  static const tealGradient = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [teal, Color(0xFF23907E)],
+  );
+  static const backgroundGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [white, cream],
+  );
+
+  // Neutrals — not in the brief, but every other screen still needs these
   static const textDark = Color(0xFF11263C);
   static const textGray = Color(0xFF6C7A89);
   static const border = Color(0xFFE6EBF2);
 
-  // Semantic ONLY — real status meaning (stock alerts, errors, success).
-  static const success = Color(0xFF22C55E);
-  static const danger = Color(0xFFEF4444);
-  static const warning = Color(0xFFF59E0B);
+  // Semantic — reuses brand colors so status meaning stays on-palette
+  static const success = teal;
+  static const danger = red;
+  static const warning = gold;
 
-  static const lightSuccess = Color(0xFFEAFBF0);
-  static const lightDanger = Color(0xFFFFECEC);
-  static const lightWarning = Color(0xFFFFF5E6);
+  static const lightSuccess = Color(0xFFE7F7F3);
+  static const lightDanger = Color(0xFFFCEAE4);
+  static const lightWarning = Color(0xFFFDF3DC);
 }

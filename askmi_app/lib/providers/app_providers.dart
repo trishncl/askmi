@@ -1,5 +1,24 @@
-// PHASE 2 — Auth core
-// TODO: AuthState (wraps AuthService's stream as a ChangeNotifier) + UserProfileProvider (looks up users/{uid} for role/branch) + BranchScope (selected branch filter, used by Owner's dashboard and locked for Manager).
-//
-// See: AA_Lomi_Firestore_Schema.docx (data shape) and the project roadmap
-// (phase order) from earlier planning. Do not build this before its phase.
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
+
+/// PHASE 2 — minimal so far: exposes the Firebase auth stream reactively.
+/// UserProfileProvider and BranchScope (role/branch lookups) get added
+/// here in Phase 4, once the `users` collection and role-based shells
+/// exist — there's nothing for them to connect to yet, so don't add them
+/// early.
+class AuthState extends ChangeNotifier {
+  final AuthService _authService;
+  User? _user;
+
+  AuthState(this._authService) {
+    _authService.authStateChanges.listen((user) {
+      _user = user;
+      notifyListeners();
+    });
+  }
+
+  User? get user => _user;
+  bool get isSignedIn => _user != null;
+  AuthService get service => _authService;
+}
