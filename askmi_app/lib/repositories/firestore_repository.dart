@@ -1,5 +1,49 @@
-// PHASE 1 — Data layer
-// TODO: Generic FirestoreRepository<T> base class (watchAll/fetchAll/add/update/delete) so every concrete repository below shares one CRUD implementation.
-//
-// See: AA_Lomi_Firestore_Schema.docx (data shape) and the project roadmap
-// (phase order) from earlier planning. Do not build this before its phase.
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+abstract class FirestoreRepository<T> {
+  final String collectionPath;
+  final FirebaseFirestore _db;
+
+  FirestoreRepository(this.collectionPath, {FirebaseFirestore? db})
+      : _db = db ?? FirebaseFirestore.instance;
+
+  CollectionReference<Map<String, dynamic>> get collection => _db.collection(collectionPath);
+
+  T fromDoc(DocumentSnapshot<Map<String, dynamic>> doc);
+  Map<String, dynamic> toMap(T item);
+
+  Stream<List<T>> watchAll({
+    String? branch,
+    String? orderByField,
+    bool descending = true,
+  }) {
+    Query<Map<String, dynamic>> query = collection;
+    if (branch != null && branch != 'All Branches') {
+      query = query.where('branch', isEqualTo: branch);
+    }
+    if (orderByField != null) {
+      query = query.orderBy(orderByField, descending: descending);
+    }
+    return query.snapshots().map((snap) => snap.docs.map(fromDoc).toList());
+  }
+
+  Future<List<T>> fetchAll({String? branch}) async {
+    Query<Map<String, dynamic>> query = collection;
+    if (branch != null && branch != 'All Branches') {
+      query = query.where('branch', isEqualTo: branch);
+    }
+    final snap = await query.get();
+    return snap.docs.map(fromDoc).toList();
+  }
+
+  Future<String> add(T item) async {
+    final ref = await collection.add(toMap(item));
+    return ref.id;
+  }
+
+  Future<void> setWithId(String id, T item) => collection.doc(id).set(toMap(item));
+
+  Future<void> update(String id, T item) => collection.doc(id).update(toMap(item));
+
+  Future<void> delete(String id) => collection.doc(id).delete();
+}

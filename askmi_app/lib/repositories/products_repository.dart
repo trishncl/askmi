@@ -1,5 +1,15 @@
-// PHASE 1 — Data layer
-// TODO: ProductsRepository extends FirestoreRepository<ProductModel>.
-//
-// See: AA_Lomi_Firestore_Schema.docx (data shape) and the project roadmap
-// (phase order) from earlier planning. Do not build this before its phase.
+// products_repository.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../core/constants/firestore_collections.dart';
+import '../models/product_model.dart';
+import 'firestore_repository.dart';
+
+class ProductsRepository extends FirestoreRepository<ProductModel> {
+  ProductsRepository({super.db}) : super(FirestoreCollections.products);
+
+  @override
+  ProductModel fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) => ProductModel.fromDoc(doc);
+
+  @override
+  Map<String, dynamic> toMap(ProductModel item) => item.toMap();
+}

@@ -1,5 +1,15 @@
-// PHASE 1 — Data layer
-// TODO: BranchesRepository extends FirestoreRepository<BranchModel>.
-//
-// See: AA_Lomi_Firestore_Schema.docx (data shape) and the project roadmap
-// (phase order) from earlier planning. Do not build this before its phase.
+// branches_repository.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../core/constants/firestore_collections.dart';
+import '../models/branch_model.dart';
+import 'firestore_repository.dart';
+
+class BranchesRepository extends FirestoreRepository<BranchModel> {
+  BranchesRepository({super.db}) : super(FirestoreCollections.branches);
+
+  @override
+  BranchModel fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) => BranchModel.fromDoc(doc);
+
+  @override
+  Map<String, dynamic> toMap(BranchModel item) => item.toMap();
+}
