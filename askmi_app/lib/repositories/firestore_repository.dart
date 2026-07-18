@@ -12,10 +12,11 @@ abstract class FirestoreRepository<T> {
   T fromDoc(DocumentSnapshot<Map<String, dynamic>> doc);
   Map<String, dynamic> toMap(T item);
 
-  Stream<List<T>> watchAll({
+   Stream<List<T>> watchAll({
     String? branch,
     String? orderByField,
     bool descending = true,
+    int? limit,
   }) {
     Query<Map<String, dynamic>> query = collection;
     if (branch != null && branch != 'All Branches') {
@@ -23,6 +24,13 @@ abstract class FirestoreRepository<T> {
     }
     if (orderByField != null) {
       query = query.orderBy(orderByField, descending: descending);
+    }
+    // Pagination: rather than cursor-based paging, the Sales list grows this
+    // limit as you scroll. Slightly more reads than a cursor, but it keeps
+    // ONE live stream — so edits and deletes stay real-time across the whole
+    // loaded range instead of only the newest page.
+    if (limit != null) {
+      query = query.limit(limit);
     }
     return query.snapshots().map((snap) => snap.docs.map(fromDoc).toList());
   }

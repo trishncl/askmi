@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_providers.dart';
 import '../dashboard/dashboard_page.dart';
+import '../sales/sales_page.dart';
 import 'app_drawer.dart';
 import 'coming_soon_page.dart';
 import 'floating_bottom_nav.dart';
@@ -60,9 +61,44 @@ class _OwnerShellState extends State<OwnerShell> {
     switch (index) {
       case 0:
         return const DashboardPage();
+      case 1:
+        return const SalesPage();
       default:
         return ComingSoonPage(title: _destinations[index].label);
     }
+  }
+
+  /// Dashboard-only. Every other module supplies its own single-purpose
+  /// FAB (e.g. Sales has "New Sale"), and two stacked FABs overlap — they
+  /// sit in the same Scaffold slot, so both become harder to hit.
+  Widget? _buildFab() {
+    if (_index != 0) return null;
+    return SpeedDialFab(
+      actions: [
+        SpeedDialAction(
+          label: 'Add Sale',
+          icon: Icons.point_of_sale_rounded,
+          // Sales exists now, so jump to it rather than showing the old
+          // "later sprint" placeholder.
+          onTap: () => setState(() => _index = 1),
+        ),
+        SpeedDialAction(
+          label: 'Add Inventory',
+          icon: Icons.inventory_rounded,
+          onTap: () => _notYet(context, 'Add Inventory'),
+        ),
+        SpeedDialAction(
+          label: 'Generate Report',
+          icon: Icons.description_rounded,
+          onTap: () => _notYet(context, 'Generate Report'),
+        ),
+        SpeedDialAction(
+          label: 'Add User',
+          icon: Icons.person_add_alt_1_rounded,
+          onTap: () => _notYet(context, 'Add User'),
+        ),
+      ],
+    );
   }
 
   @override
@@ -131,30 +167,7 @@ class _OwnerShellState extends State<OwnerShell> {
         ),
         child: KeyedSubtree(key: ValueKey(_index), child: _pageFor(_index)),
       ),
-      floatingActionButton: SpeedDialFab(
-        actions: [
-          SpeedDialAction(
-            label: 'Add Sale',
-            icon: Icons.point_of_sale_rounded,
-            onTap: () => _notYet(context, 'Add Sale'),
-          ),
-          SpeedDialAction(
-            label: 'Add Inventory',
-            icon: Icons.inventory_rounded,
-            onTap: () => _notYet(context, 'Add Inventory'),
-          ),
-          SpeedDialAction(
-            label: 'Generate Report',
-            icon: Icons.description_rounded,
-            onTap: () => _notYet(context, 'Generate Report'),
-          ),
-          SpeedDialAction(
-            label: 'Add User',
-            icon: Icons.person_add_alt_1_rounded,
-            onTap: () => _notYet(context, 'Add User'),
-          ),
-        ],
-      ),
+      floatingActionButton: _buildFab(),
       bottomNavigationBar: FloatingBottomNav(
         currentIndex: _bottomIndex,
         items: _bottomItems,
