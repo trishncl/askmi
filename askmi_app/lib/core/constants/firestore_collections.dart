@@ -7,7 +7,7 @@ class FirestoreCollections {
 
   static const users = 'users';
   static const sales = 'sales';
-  static const products = 'products'; // movement tracking, NOT the POS catalog
+  static const products = 'products'; // Products Management catalog (name/price/stock/branch)// movement tracking, NOT the POS catalog
   static const inventory = 'inventory';
   static const menuItems = 'menuItems'; // POS catalog — separate from products
   static const branches = 'branches';

@@ -23,7 +23,8 @@ class AppDrawer extends StatelessWidget {
   static const sectionHeaders = <int, String>{
     0: 'MAIN',
     1: 'OPERATIONS',
-    5: 'ADMINISTRATION',
+    5: 'INSIGHTS',
+    6: 'ADMINISTRATION',
   };
 
   const AppDrawer({

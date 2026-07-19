@@ -65,7 +65,7 @@ class _KpiCardState extends State<KpiCard> {
           duration: const Duration(milliseconds: 140),
           child: Container(
             width: 168,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.card,
               borderRadius: BorderRadius.circular(18),
@@ -79,6 +79,7 @@ class _KpiCardState extends State<KpiCard> {
               ],
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -88,9 +89,11 @@ class _KpiCardState extends State<KpiCard> {
                     Expanded(
                       child: Text(
                         d.label.toUpperCase(),
-                        maxLines: 2,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 10,
+                          fontSize: 9.5,
+                          height: 1,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.4,
                           color: AppColors.textGray,
@@ -107,14 +110,15 @@ class _KpiCardState extends State<KpiCard> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 8),
                 if (d.numericValue != null)
                   AnimatedCount(
                     value: d.numericValue!,
                     prefix: d.prefix,
                     decimals: d.decimals,
                     style: const TextStyle(
-                      fontSize: 21,
+                      fontSize: 18,
+                      height: 1,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textDark,
                     ),
@@ -125,17 +129,18 @@ class _KpiCardState extends State<KpiCard> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 19,
+                      fontSize: 16,
+                      height: 1,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textDark,
                     ),
                   ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 1),
                 Text(
                   d.caption,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textGray),
+                  style: const TextStyle(fontSize: 10, height: 1, color: AppColors.textGray),
                 ),
               ],
             ),

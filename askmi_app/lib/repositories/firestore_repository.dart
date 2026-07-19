@@ -6,6 +6,8 @@ abstract class FirestoreRepository<T> {
 
   FirestoreRepository(this.collectionPath, {FirebaseFirestore? db})
       : _db = db ?? FirebaseFirestore.instance;
+  
+  FirebaseFirestore get db => _db;
 
   CollectionReference<Map<String, dynamic>> get collection => _db.collection(collectionPath);
 

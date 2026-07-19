@@ -5,11 +5,14 @@ import '../../core/theme/app_colors.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_providers.dart';
 import '../dashboard/dashboard_page.dart';
+import '../inventory/inventory_page.dart';
+import '../products/products_page.dart';
 import '../sales/sales_page.dart';
 import 'app_drawer.dart';
 import 'coming_soon_page.dart';
 import 'floating_bottom_nav.dart';
 import 'speed_dial_fab.dart';
+import '../products/products_page.dart';
 
 /// PHASE 4 — the Owner's container: AppBar (branch selector, notifications,
 /// avatar), navigation drawer, floating bottom nav, and speed-dial FAB.
@@ -33,7 +36,6 @@ class _OwnerShellState extends State<OwnerShell> {
     DrawerDestination('Sales', Icons.receipt_long_rounded),
     DrawerDestination('Inventory', Icons.inventory_2_rounded),
     DrawerDestination('Products', Icons.lunch_dining_rounded),
-    DrawerDestination('Menu Management', Icons.restaurant_menu_rounded),
     DrawerDestination('Branches', Icons.store_rounded),
     DrawerDestination('Reports', Icons.description_rounded),
     DrawerDestination('User Management', Icons.people_alt_rounded),
@@ -44,11 +46,11 @@ class _OwnerShellState extends State<OwnerShell> {
     BottomNavItem('Home', Icons.home_outlined, Icons.home_rounded),
     BottomNavItem('Branches', Icons.store_outlined, Icons.store_rounded),
     BottomNavItem('Reports', Icons.description_outlined, Icons.description_rounded),
-    BottomNavItem('Users', Icons.people_alt_outlined, Icons.people_alt_rounded),
+    BottomNavItem('User Management', Icons.people_alt_outlined, Icons.people_alt_rounded),
   ];
 
   /// Maps each bottom-nav slot to its index in [_destinations].
-  static const _bottomToDestination = [0, 5, 6, 7];
+  static const _bottomToDestination = [0, 4, 5, 6];
 
   int get _bottomIndex {
     final i = _bottomToDestination.indexOf(_index);
@@ -63,6 +65,10 @@ class _OwnerShellState extends State<OwnerShell> {
         return const DashboardPage();
       case 1:
         return const SalesPage();
+      case 2:
+        return const InventoryPage();
+      case 3:
+        return const ProductsPage();
       default:
         return ComingSoonPage(title: _destinations[index].label);
     }
@@ -86,6 +92,11 @@ class _OwnerShellState extends State<OwnerShell> {
           label: 'Add Inventory',
           icon: Icons.inventory_rounded,
           onTap: () => _notYet(context, 'Add Inventory'),
+        ),
+        SpeedDialAction(
+          label: 'Add Product',
+          icon: Icons.lunch_dining_rounded,
+          onTap: () => setState(() => _index = 3),
         ),
         SpeedDialAction(
           label: 'Generate Report',
