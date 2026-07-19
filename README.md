@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/askmi_logo.png" alt="AskMi Logo" width="220"/>
+<img src="./askmi_logo.png" alt="AskMi Logo" width="220"/>
 
 # AskMi – AA’s Lomi Mobile Application
 
