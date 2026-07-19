@@ -7,12 +7,12 @@ import '../../providers/app_providers.dart';
 import '../dashboard/dashboard_page.dart';
 import '../inventory/inventory_page.dart';
 import '../products/products_page.dart';
+import '../reports/reports_page.dart';
 import '../sales/sales_page.dart';
 import 'app_drawer.dart';
 import 'coming_soon_page.dart';
 import 'floating_bottom_nav.dart';
 import 'speed_dial_fab.dart';
-import '../products/products_page.dart';
 
 /// PHASE 4 — the Owner's container: AppBar (branch selector, notifications,
 /// avatar), navigation drawer, floating bottom nav, and speed-dial FAB.
@@ -69,6 +69,8 @@ class _OwnerShellState extends State<OwnerShell> {
         return const InventoryPage();
       case 3:
         return const ProductsPage();
+      case 5:
+        return const ReportsPage();
       default:
         return ComingSoonPage(title: _destinations[index].label);
     }
@@ -92,11 +94,6 @@ class _OwnerShellState extends State<OwnerShell> {
           label: 'Add Inventory',
           icon: Icons.inventory_rounded,
           onTap: () => _notYet(context, 'Add Inventory'),
-        ),
-        SpeedDialAction(
-          label: 'Add Product',
-          icon: Icons.lunch_dining_rounded,
-          onTap: () => setState(() => _index = 3),
         ),
         SpeedDialAction(
           label: 'Generate Report',
