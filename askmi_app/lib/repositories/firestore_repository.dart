@@ -15,27 +15,52 @@ abstract class FirestoreRepository<T> {
   Map<String, dynamic> toMap(T item);
 
    Stream<List<T>> watchAll({
-    String? branch,
-    String? orderByField,
-    bool descending = true,
-    int? limit,
-  }) {
-    Query<Map<String, dynamic>> query = collection;
-    if (branch != null && branch != 'All Branches') {
-      query = query.where('branch', isEqualTo: branch);
+      String? branch,
+      String? orderByField,
+      bool descending = true,
+      int? limit,
+    }) {
+      final filterBranch = branch != null && branch != 'All Branches';
+      Query<Map<String, dynamic>> query = collection;
+      if (filterBranch) {
+        query = query.where('branch', isEqualTo: branch);
+      }
+      // Combining where + orderBy needs a composite Firestore index.
+      // When branch-filtered, skip server orderBy and sort client-side instead.
+      if (orderByField != null && !filterBranch) {
+        query = query.orderBy(orderByField, descending: descending);
+      }
+      if (limit != null && !filterBranch) {
+        query = query.limit(limit);
+      }
+      return query.snapshots().map((snap) {
+        var docs = snap.docs.toList();
+        if (orderByField != null && filterBranch) {
+          docs.sort((a, b) {
+            final av = a.data()[orderByField];
+            final bv = b.data()[orderByField];
+            final cmp = _compareFirestoreValues(av, bv);
+            return descending ? -cmp : cmp;
+          });
+          if (limit != null && docs.length > limit) {
+            docs = docs.take(limit).toList();
+          }
+        }
+        return docs.map(fromDoc).toList();
+      });
     }
-    if (orderByField != null) {
-      query = query.orderBy(orderByField, descending: descending);
+    int _compareFirestoreValues(dynamic a, dynamic b) {
+      if (a == null && b == null) return 0;
+      if (a == null) return -1;
+      if (b == null) return 1;
+      if (a is Timestamp && b is Timestamp) {
+        return a.compareTo(b);
+      }
+      if (a is num && b is num) return a.compareTo(b);
+      if (a is String && b is String) return a.compareTo(b);
+      if (a is DateTime && b is DateTime) return a.compareTo(b);
+      return a.toString().compareTo(b.toString());
     }
-    // Pagination: rather than cursor-based paging, the Sales list grows this
-    // limit as you scroll. Slightly more reads than a cursor, but it keeps
-    // ONE live stream — so edits and deletes stay real-time across the whole
-    // loaded range instead of only the newest page.
-    if (limit != null) {
-      query = query.limit(limit);
-    }
-    return query.snapshots().map((snap) => snap.docs.map(fromDoc).toList());
-  }
 
   Future<List<T>> fetchAll({String? branch}) async {
     Query<Map<String, dynamic>> query = collection;
