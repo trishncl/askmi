@@ -6,6 +6,8 @@ import '../../core/widgets/gradient_button.dart';
 import '../../models/user_model.dart';
 import '../../repositories/users_repository.dart';
 import '../../services/user_admin_service.dart';
+import '../../core/utils/dropdown_utils.dart';
+import '../../core/widgets/safe_dropdown_form_field.dart';
 
 const _kRoles = ['Owner', 'Manager', 'Cashier'];
 const _kStatuses = ['active', 'inactive', 'pending'];
@@ -58,9 +60,21 @@ class _UserFormPageState extends State<UserFormPage> {
     _contactCtrl = TextEditingController(text: e?.contactNumber ?? '')..addListener(_markDirty);
     _passwordCtrl = TextEditingController()..addListener(_markDirty);
     _imageUrlCtrl = TextEditingController(text: e?.profileImageUrl ?? '')..addListener(_markDirty);
-    _role = e?.displayRole ?? 'Cashier';
-    _branch = e?.branch ?? kBranchNames.first;
-    _status = e?.status ?? 'active';
+    _role = resolveDropdownValue(
+      value: e?.displayRole,
+      items: _kRoles,
+      fallback: 'Cashier',
+    );
+    _branch = resolveDropdownValue(
+      value: e?.branch,
+      items: kBranchNames,
+      fallback: kBranchNames.first,
+    );
+    _status = resolveDropdownValue(
+      value: e?.status,
+      items: _kStatuses,
+      fallback: 'active',
+    );
   }
 
   void _markDirty() {
@@ -239,11 +253,12 @@ class _UserFormPageState extends State<UserFormPage> {
                 validator: (v) => (v ?? '').trim().isEmpty ? 'Required.' : null,
               ),
               const SizedBox(height: 14),
-              _dropdown(
+              SafeDropdownFormField(
                 label: 'Role',
                 icon: Icons.shield_outlined,
                 value: _role,
                 items: _kRoles,
+                fallback: 'Cashier',
                 onChanged: (v) => setState(() {
                   _role = v;
                   _dirty = true;
@@ -251,11 +266,12 @@ class _UserFormPageState extends State<UserFormPage> {
               ),
               const SizedBox(height: 14),
               if (_branchRequired) ...[
-                _dropdown(
+                SafeDropdownFormField(
                   label: 'Assigned Branch',
                   icon: Icons.storefront_rounded,
                   value: _branch,
                   items: kBranchNames,
+                  fallback: kBranchNames.first,
                   onChanged: (v) => setState(() {
                     _branch = v;
                     _dirty = true;
@@ -292,11 +308,12 @@ class _UserFormPageState extends State<UserFormPage> {
                 ),
                 const SizedBox(height: 14),
               ],
-              _dropdown(
+              SafeDropdownFormField(
                 label: 'Status',
                 icon: Icons.toggle_on_outlined,
                 value: _status,
                 items: _kStatuses,
+                fallback: 'active',
                 onChanged: (v) => setState(() {
                   _status = v;
                   _dirty = true;

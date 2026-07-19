@@ -8,6 +8,8 @@ import '../../core/widgets/gradient_button.dart';
 import '../../models/inventory_model.dart';
 import '../../providers/app_providers.dart';
 import '../../repositories/inventory_repository.dart';
+import '../../core/utils/dropdown_utils.dart';
+import '../../core/widgets/safe_dropdown_form_field.dart';
 
 /// Add / edit a daily inventory log. Doubles as both by taking an optional
 /// [existing] — same shape as SaleFormPage so the two forms feel identical.
@@ -55,9 +57,21 @@ class _InventoryFormPageState extends State<InventoryFormPage> {
     _reorderCtrl = TextEditingController(text: e == null || e.reorderLevel == 0 ? '' : _num(e.reorderLevel));
     _maxCtrl = TextEditingController(text: e == null || e.maxLevel == 0 ? '' : _num(e.maxLevel));
     _notesCtrl = TextEditingController(text: e?.notes ?? '');
-    _category = e?.category ?? _categories.first;
-    _branch = e?.branch ?? kBranchNames.first;
-    _unit = (e?.unit.isNotEmpty ?? false) ? e!.unit : _units.first;
+    _category = resolveDropdownValue(
+      value: e?.category,
+      items: _categories,
+      fallback: _categories.first,
+    );
+    _branch = resolveDropdownValue(
+      value: e?.branch,
+      items: kBranchNames,
+      fallback: kBranchNames.first,
+    );
+    _unit = resolveDropdownValue(
+      value: e?.unit,
+      items: _units,
+      fallback: _units.first,
+    );
     _date = e?.date ?? DateTime.now();
   }
 
@@ -179,19 +193,21 @@ class _InventoryFormPageState extends State<InventoryFormPage> {
               },
             ),
             const SizedBox(height: 14),
-            _dropdown(
+            SafeDropdownFormField(
               label: 'Category',
               icon: Icons.category_outlined,
               value: _category,
               items: _categories,
+              fallback: _categories.first,
               onChanged: (v) => setState(() => _category = v),
             ),
             const SizedBox(height: 14),
-            _dropdown(
+            SafeDropdownFormField(
               label: 'Branch',
               icon: Icons.storefront_rounded,
               value: _branch,
               items: kBranchNames,
+              fallback: kBranchNames.first,
               onChanged: (v) => setState(() => _branch = v),
             ),
             const SizedBox(height: 14),
@@ -270,11 +286,12 @@ class _InventoryFormPageState extends State<InventoryFormPage> {
               ],
             ),
             const SizedBox(height: 14),
-            _dropdown(
+            SafeDropdownFormField(
               label: 'Unit',
               icon: Icons.straighten_rounded,
               value: _unit,
               items: _units,
+              fallback: _units.first,
               onChanged: (v) => setState(() => _unit = v),
             ),
             const SizedBox(height: 20),

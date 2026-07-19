@@ -161,7 +161,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: UserSummaryCard(users: all),
                 ),
               ),
-              SliverToBoxAdapter(child: _infoBanner()),
               SliverToBoxAdapter(child: _searchField()),
               SliverToBoxAdapter(
                 child: UserFilterBar(
@@ -265,36 +264,6 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _infoBanner() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.lightSuccess,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.teal.withValues(alpha: 0.25)),
-        ),
-        child: const Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.info_outline_rounded, size: 18, color: AppColors.teal),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'This manages user profiles in Firestore. To create actual login '
-                'accounts, use Firebase Admin SDK or a Cloud Function — never place '
-                'Admin credentials in the client app. Invite users via the platform\'s '
-                'invite system for authentication.',
-                style: TextStyle(fontSize: 12, color: AppColors.textDark, height: 1.4),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

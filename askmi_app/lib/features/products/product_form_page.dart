@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/branch_constants.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/dropdown_utils.dart';
 import '../../core/widgets/gradient_button.dart';
+import '../../core/widgets/safe_dropdown_form_field.dart';
 import '../../models/product_model.dart';
 import '../../providers/app_providers.dart';
 import '../../repositories/products_repository.dart';
@@ -53,9 +55,17 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _stockCtrl = TextEditingController(text: e == null ? '' : '${e.stock}');
     _descriptionCtrl = TextEditingController(text: e?.description ?? '');
     _imageCtrl = TextEditingController(text: e?.image ?? '');
-    _branch = e?.branch ?? kBranchNames.first;
+    _branch = resolveDropdownValue(
+      value: e?.branch,
+      items: kBranchNames,
+      fallback: kBranchNames.first,
+    );
     _status = e?.status ?? ProductStatusValues.available;
-    _movementStatus = e?.movementStatus ?? MovementStatusValues.normal;
+    _movementStatus = resolveDropdownValue(
+      value: e?.movementStatus,
+      items: const [MovementStatusValues.normal, MovementStatusValues.fastMoving],
+      fallback: MovementStatusValues.normal,
+    );
 
     for (final c in [_nameCtrl, _categoryCtrl, _priceCtrl, _stockCtrl, _descriptionCtrl, _imageCtrl]) {
       c.addListener(_markDirty);
@@ -115,10 +125,6 @@ class _ProductFormPageState extends State<ProductFormPage> {
     try {
       final name = _nameCtrl.text.trim();
 
-      // Prevent duplicate product names within the same branch. Checked
-      // here (not just relying on a form-level "looks unique" guess) so a
-      // race between two people adding the same product at once still
-      // gets caught at write time, not silently duplicated.
       final duplicate = await _repo.nameExistsInBranch(
         name,
         _branch,
@@ -178,9 +184,6 @@ class _ProductFormPageState extends State<ProductFormPage> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      // Intercept the pop ourselves whenever there are unsaved edits, so
-      // the system back gesture/button gets the same warning as the
-      // AppBar back arrow.
       canPop: !_dirty,
       onPopInvoked: (didPop) async {
         if (didPop) return;
@@ -260,11 +263,12 @@ class _ProductFormPageState extends State<ProductFormPage> {
                 ],
               ),
               const SizedBox(height: 14),
-              _dropdown(
+              SafeDropdownFormField(
                 label: 'Branch',
                 icon: Icons.storefront_rounded,
                 value: _branch,
                 items: kBranchNames,
+                fallback: kBranchNames.first,
                 onChanged: (v) => setState(() {
                   _branch = v;
                   _dirty = true;
@@ -302,11 +306,12 @@ class _ProductFormPageState extends State<ProductFormPage> {
                 ),
               ),
               const SizedBox(height: 14),
-              _dropdown(
+              SafeDropdownFormField(
                 label: 'Movement Status',
                 icon: Icons.trending_up_rounded,
                 value: _movementStatus,
                 items: const [MovementStatusValues.normal, MovementStatusValues.fastMoving],
+                fallback: MovementStatusValues.normal,
                 itemLabel: (v) => v == MovementStatusValues.fastMoving ? 'Fast Moving' : 'Normal',
                 onChanged: (v) => setState(() {
                   _movementStatus = v;
@@ -383,8 +388,6 @@ class _ProductFormPageState extends State<ProductFormPage> {
       textCapitalization: textCapitalization,
       maxLines: maxLines,
       onChanged: (_) {
-        // Live image preview needs a rebuild; other fields just need the
-        // dirty flag, already handled by the controller listener.
         if (controller == _imageCtrl) setState(() {});
       },
       autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -394,30 +397,6 @@ class _ProductFormPageState extends State<ProductFormPage> {
         prefixIcon: Icon(icon),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       ),
-    );
-  }
-
-  Widget _dropdown({
-    required String label,
-    required IconData icon,
-    required String value,
-    required List<String> items,
-    required ValueChanged<String> onChanged,
-    String Function(String)? itemLabel,
-  }) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      items: [
-        for (final i in items) DropdownMenuItem(value: i, child: Text(itemLabel?.call(i) ?? i)),
-      ],
-      onChanged: (v) {
-        if (v != null) onChanged(v);
-      },
     );
   }
 }

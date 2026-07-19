@@ -8,6 +8,8 @@ import '../../core/widgets/gradient_button.dart';
 import '../../models/sale_model.dart';
 import '../../providers/app_providers.dart';
 import '../../repositories/sales_repository.dart';
+import '../../core/utils/dropdown_utils.dart';
+import '../../core/widgets/safe_dropdown_form_field.dart';
 
 /// Add / edit a sale. Doubles as both by taking an optional [existing].
 ///
@@ -46,8 +48,16 @@ class _SaleFormPageState extends State<SaleFormPage> {
     _qtyCtrl = TextEditingController(text: e == null ? '1' : '${e.quantity}');
     _priceCtrl = TextEditingController(
         text: e == null ? '' : e.unitPrice.toStringAsFixed(2));
-    _branch = e?.branch ?? kBranchNames.first;
-    _paymentMethod = e?.paymentMethod ?? 'Cash';
+    _branch = resolveDropdownValue(
+      value: e?.branch,
+      items: kBranchNames,
+      fallback: kBranchNames.first,
+    );
+    _paymentMethod = resolveDropdownValue(
+      value: e?.paymentMethod,
+      items: const ['Cash', 'GCash', 'Card'],
+      fallback: 'Cash',
+    );
     _createdAt = e?.createdAt ?? DateTime.now();
   }
 
@@ -221,19 +231,21 @@ class _SaleFormPageState extends State<SaleFormPage> {
               ],
             ),
             const SizedBox(height: 14),
-            _dropdown(
+            SafeDropdownFormField(
               label: 'Branch',
               icon: Icons.storefront_rounded,
               value: _branch,
               items: kBranchNames,
+              fallback: kBranchNames.first,
               onChanged: (v) => setState(() => _branch = v),
             ),
             const SizedBox(height: 14),
-            _dropdown(
+            SafeDropdownFormField(
               label: 'Payment Method',
               icon: Icons.credit_card_rounded,
               value: _paymentMethod,
               items: const ['Cash', 'GCash', 'Card'],
+              fallback: 'Cash',
               onChanged: (v) => setState(() => _paymentMethod = v),
             ),
             const SizedBox(height: 14),
