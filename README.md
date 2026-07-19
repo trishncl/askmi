@@ -4,7 +4,7 @@
 
 # AskMi
 
-** An AI-Assisted Decision Support for AA’s Lomi **
+**An AI-Assisted Decision Support for AA’s Lomi**
 
 </div>
 
@@ -101,7 +101,7 @@ flutter run
 - Provider or Riverpod
 - Google Fonts
 
-## Required Project Folder
+## 📁 Required Project Folder
 
 Open the folder containing the following files and directories:
 
