@@ -2,17 +2,17 @@
 
 <img src="./askmi_logo.png" alt="AskMi Logo" width="220"/>
 
-# AskMi – AA’s Lomi Mobile Application
+# AskMi
 
-**A Flutter and Firebase-based sales and inventory management application for AA’s Lomi**
+** An AI-Assisted Decision Support for AA’s Lomi **
 
 </div>
 
 ---
 
-## Project Overview
+## 📌 Project Overview
 
-AskMi is a mobile application developed for AA’s Lomi. It provides role-based access for the owner, managers, and cashiers to manage sales, inventory, menu items, reports, branches, and user accounts.
+AskMi is a mobile application developed for AA’s Lomi. It provides role-based access for the owner, managers, and cashiers to manage sales, inventory, products, reports, and user management.
 
 ## How to Open the Project
 
@@ -58,7 +58,7 @@ flutter pub get
 flutter run
 ```
 
-## User Roles and Features
+## 👥 User Roles and Features
 
 ### Owner
 
