@@ -13,4 +13,5 @@ class FirestoreCollections {
   static const branches = 'branches';
   static const reports = 'reports';
   static const notifications = 'notifications';
+  static const userActivity = 'user_activity';
 }

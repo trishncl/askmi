@@ -1,1 +1,32 @@
-{"firestore":{"rules":"firestore.rules"},"flutter":{"platforms":{"android":{"default":{"projectId":"askmi-aa-s-lomi-app","appId":"1:832387146877:android:de745269d8f8eca665fd14","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"askmi-aa-s-lomi-app","configurations":{"android":"1:832387146877:android:de745269d8f8eca665fd14","ios":"1:832387146877:ios:9003e4e3fc4d8cee65fd14","macos":"1:832387146877:ios:9003e4e3fc4d8cee65fd14","web":"1:832387146877:web:d32d9b369aae8c9e65fd14","windows":"1:832387146877:web:87f8c312f6f9c62665fd14"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "askmi-aa-s-lomi-app",
+          "appId": "1:832387146877:android:de745269d8f8eca665fd14",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "askmi-aa-s-lomi-app",
+          "configurations": {
+            "android": "1:832387146877:android:de745269d8f8eca665fd14",
+            "ios": "1:832387146877:ios:9003e4e3fc4d8cee65fd14",
+            "macos": "1:832387146877:ios:9003e4e3fc4d8cee65fd14",
+            "web": "1:832387146877:web:d32d9b369aae8c9e65fd14",
+            "windows": "1:832387146877:web:87f8c312f6f9c62665fd14"
+          }
+        }
+      }
+    }
+  }
+}

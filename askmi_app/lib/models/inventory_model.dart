@@ -75,20 +75,30 @@ class InventoryModel {
     final d = doc.data()!;
     return InventoryModel(
       id: doc.id,
-      itemName: d['itemName'] ?? '',
-      category: d['category'] ?? 'Perishable',
-      branch: d['branch'] ?? '',
+      itemName: _asString(d['itemName']),
+      category: _asString(d['category'], 'Perishable'),
+      branch: _asString(d['branch']),
       opening: (d['opening'] ?? 0).toDouble(),
       deliveries: (d['deliveries'] ?? 0).toDouble(),
       closing: (d['closing'] ?? 0).toDouble(),
       wastage: (d['wastage'] ?? 0).toDouble(),
-      unit: d['unit'] ?? '',
+      unit: _asString(d['unit']),
       reorderLevel: (d['reorderLevel'] ?? 0).toDouble(),
       maxLevel: (d['maxLevel'] ?? 0).toDouble(),
-      notes: d['notes'] ?? '',
-      recordedByUid: d['recordedByUid'] ?? '',
+      notes: _asString(d['notes']),
+      recordedByUid: _asString(d['recordedByUid']),
       date: (d['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
+  }
+
+  /// See SaleModel._asString — same reasoning: a field saved as a
+  /// Reference (or anything else) instead of a String used to crash the
+  /// whole stream. This degrades gracefully instead.
+  static String _asString(dynamic value, [String fallback = '']) {
+    if (value == null) return fallback;
+    if (value is String) return value;
+    if (value is DocumentReference) return value.id;
+    return value.toString();
   }
 
   Map<String, dynamic> toMap() => {

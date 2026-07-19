@@ -95,6 +95,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   String _friendlyError(Object error) {
+    // ignore: avoid_print
+    print('DASHBOARD STREAM ERROR: $error');
     final s = error.toString();
     if (s.contains('permission-denied')) {
       return "You don't have access to this data. Check your Firestore rules.";

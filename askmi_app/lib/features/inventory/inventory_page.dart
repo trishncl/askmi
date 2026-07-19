@@ -292,15 +292,19 @@ class _InventoryPageState extends State<InventoryPage> {
                       SliverToBoxAdapter(
                         child: Padding(
                           padding: const EdgeInsets.all(16),
-                          child: ErrorStateCard(
-                            message: error.toString().contains('permission-denied')
-                                ? "You don't have access to inventory data. Check your Firestore rules."
-                                : 'Check your connection and try again.',
-                            onRetry: () => setState(() {
-                              _refreshToken++;
-                              _limit = _pageSize;
-                            }),
-                          ),
+                          child: Builder(builder: (context) {
+                            // ignore: avoid_print
+                            print('INVENTORY STREAM ERROR: $error');
+                            return ErrorStateCard(
+                              message: error.toString().contains('permission-denied')
+                                  ? "You don't have access to inventory data. Check your Firestore rules."
+                                  : 'Check your connection and try again.',
+                              onRetry: () => setState(() {
+                                _refreshToken++;
+                                _limit = _pageSize;
+                              }),
+                            );
+                          }),
                         ),
                       )
                     else if (loading)

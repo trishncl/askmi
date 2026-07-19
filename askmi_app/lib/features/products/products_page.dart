@@ -232,12 +232,16 @@ class _ProductsPageState extends State<ProductsPage> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: ErrorStateCard(
-                        message: error.toString().contains('permission-denied')
-                            ? "You don't have access to product data. Check your Firestore rules."
-                            : 'Check your connection and try again.',
-                        onRetry: () => setState(() => _refreshToken++),
-                      ),
+                      child: Builder(builder: (context) {
+                        // ignore: avoid_print
+                        print('PRODUCTS STREAM ERROR: $error');
+                        return ErrorStateCard(
+                          message: error.toString().contains('permission-denied')
+                              ? "You don't have access to product data. Check your Firestore rules."
+                              : 'Check your connection and try again.',
+                          onRetry: () => setState(() => _refreshToken++),
+                        );
+                      }),
                     ),
                   )
                 else if (loading)

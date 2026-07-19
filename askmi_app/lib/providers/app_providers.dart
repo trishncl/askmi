@@ -14,10 +14,15 @@ class AuthState extends ChangeNotifier {
   User? _user;
 
   AuthState(this._authService) {
-    _authService.authStateChanges.listen((user) {
+   _authService.authStateChanges.listen(
+    (user) {
       _user = user;
       notifyListeners();
-    });
+    },
+    onError: (Object error, StackTrace stackTrace) {
+      debugPrint('Auth stream error: $error\n$stackTrace');
+    },
+  );
   }
 
   User? get user => _user;
@@ -66,17 +71,23 @@ class UserProfileProvider extends ChangeNotifier {
     loading = true;
     notifyListeners();
 
-    _sub = _usersRepository.watchByUid(uid).listen((user) {
+   _sub = _usersRepository.watchByUid(uid).listen(
+    (user) {
       profile = user;
       notConfigured = user == null;
-      // A deactivated account must not reach any shell. Because this is a
-      // live stream, an Owner flipping `active` to false takes effect
-      // immediately — the user gets kicked to the deactivated screen
-      // mid-session, without needing to sign out first.
       deactivated = user != null && !user.active;
       loading = false;
       notifyListeners();
-    });
+    },
+    onError: (Object error, StackTrace stackTrace) {
+      debugPrint('Failed to load user profile for $uid: $error\n$stackTrace');
+      profile = null;
+      notConfigured = true;
+      deactivated = false;
+      loading = false;
+      notifyListeners();
+    },
+  );
   }
 
   @override

@@ -13,7 +13,7 @@ import 'app_drawer.dart';
 import 'coming_soon_page.dart';
 import 'floating_bottom_nav.dart';
 import 'speed_dial_fab.dart';
-
+import '../settings/settings_page.dart';   // ← added
 /// PHASE 4 — the Owner's container: AppBar (branch selector, notifications,
 /// avatar), navigation drawer, floating bottom nav, and speed-dial FAB.
 ///
@@ -50,7 +50,7 @@ class _OwnerShellState extends State<OwnerShell> {
   ];
 
   /// Maps each bottom-nav slot to its index in [_destinations].
-  static const _bottomToDestination = [0, 4, 5, 6];
+  static const _bottomToDestination = [0, 4, 5, 7];
 
   int get _bottomIndex {
     final i = _bottomToDestination.indexOf(_index);
@@ -71,6 +71,9 @@ class _OwnerShellState extends State<OwnerShell> {
         return const ProductsPage();
       case 5:
         return const ReportsPage();
+      case 6:
+      case 7:
+        return const SettingsPage();
       default:
         return ComingSoonPage(title: _destinations[index].label);
     }
@@ -103,7 +106,9 @@ class _OwnerShellState extends State<OwnerShell> {
         SpeedDialAction(
           label: 'Add User',
           icon: Icons.person_add_alt_1_rounded,
-          onTap: () => _notYet(context, 'Add User'),
+          // User Management exists now, so jump to it (same pattern as
+          // "Add Sale" above) rather than the old placeholder snackbar.
+          onTap: () => setState(() => _index = 7),   // ← was: () => _notYet(context, 'Add User')
         ),
       ],
     );

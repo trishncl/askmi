@@ -45,7 +45,7 @@ class ProductsRepository extends FirestoreRepository<ProductModel> {
     final doc = collection.doc(id);
     await db.runTransaction((tx) async {
       final snap = await tx.get(doc);
-      final current = (snap.data()?['stock'] ?? 0) as int;
+      final current = ((snap.data()?['stock'] ?? 0) as num).toInt();
       final next = (current - by) < 0 ? 0 : current - by;
       tx.update(doc, {'stock': next, 'updatedAt': Timestamp.now()});
     });

@@ -1,35 +1,204 @@
 rules_version = '2';
 
-// PHASE 1 baseline. Deploy this before writing a single screen — see the
-// project roadmap: every collection requires sign-in, and the `users`
-// collection additionally restricts who can create/delete accounts.
-//
-// KNOWN GAP, intentionally deferred to PHASE 6 (hardening pass): none of
-// these rules yet check that a Manager/Cashier's own `branch` matches the
-// document's `branch` field. Right now any authenticated user can read/
-// write any branch's sales/inventory/products/menuItems. Do not consider
-// this "secured" until Phase 6 adds that check.
+// SPARK-PLAN VERSION — no Cloud Functions. Privileged user-management
+// writes (create/edit/status-change) are done directly from the Flutter
+// app by an authenticated Owner/Manager, so these rules are now the ONLY
+// enforcement layer for who can do what. Account creation itself uses a
+// secondary Firebase App on the client to call Auth's own
+// createUserWithEmailAndPassword (see UserAdminService.createUser) — this
+// still creates a real Firebase Auth user, it's just triggered from the
+// admin's browser session instead of from a server.
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function activeProfile() {
+      return signedIn() &&
+        profile().data.active != false &&
+        (!('status' in profile().data) || profile().data.status == 'active');
+    }
 
     function isOwner() {
-      return request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Owner';
+      return activeProfile() && profile().data.role == 'Owner';
     }
 
-    // users: create/delete restricted to Owner (checked via isOwner() above).
-    // Account creation happens client-side via a temporary secondary
-    // Firebase app (see services/staff_account_service.dart, Phase 2) —
-    // no Cloud Function, no Blaze plan needed.
+    function isManager() {
+      return activeProfile() && profile().data.role == 'Manager';
+    }
+
+    function hasPermission(permission) {
+      return activeProfile() &&
+        profile().data.permissions is map &&
+        profile().data.permissions[permission] == true;
+    }
+
+    function sameBranch(data) {
+      return data.branch == profile().data.branch;
+    }
+
+    function canReadUser(uid, data) {
+      return activeProfile() && (
+        request.auth.uid == uid ||
+        isOwner() ||
+        (isManager() && hasPermission('users_view') &&
+          sameBranch(data) && data.role in ['Manager', 'Cashier'])
+      );
+    }
+
+    // Owner: can manage anyone. Manager: can manage non-Owner accounts in
+    // their own branch. Mirrors the old Cloud Function's
+    // assertCanManageTarget() exactly.
+    function canManageTarget(targetRole, targetBranch) {
+      return isOwner() ||
+        (isManager() && targetRole != 'Owner' && targetBranch == profile().data.branch);
+    }
+
+    function validRole(role) {
+      return role in ['Owner', 'Manager', 'Cashier'];
+    }
+
+    function validStatus(status) {
+      return status in ['active', 'inactive', 'pending'];
+    }
+
+    function branchOk(role, branch) {
+      return (role == 'Owner' && branch == 'All Branches') ||
+        (role != 'Owner' && branch is string && branch.size() > 0 && branch != 'All Branches');
+    }
+
     match /users/{uid} {
-      allow read: if request.auth != null;
-      allow update: if request.auth != null;
-      allow create, delete: if isOwner();
+      allow get, list: if canReadUser(uid, resource.data);
+
+      // New profile doc, written right after the admin creates the real
+      // Auth account client-side.
+      allow create: if activeProfile() &&
+        request.resource.data.user_id == uid &&
+        request.resource.data.created_by == request.auth.uid &&
+        request.resource.data.updated_by == request.auth.uid &&
+        request.resource.data.permissions is map &&
+        validRole(request.resource.data.role) &&
+        validStatus(request.resource.data.status) &&
+        branchOk(request.resource.data.role, request.resource.data.branch) &&
+        canManageTarget(request.resource.data.role, request.resource.data.branch);
+
+      allow delete: if false;
+
+      // A signed-in user editing their OWN basic profile fields only —
+      // never role/branch/status/permissions.
+      allow update: if activeProfile() && request.auth.uid == uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'first_name', 'last_name', 'name', 'username',
+          'contact_number', 'profile_image_url', 'updated_at', 'updated_by'
+        ]) && request.resource.data.updated_by == request.auth.uid;
+
+      // Owner/Manager editing SOMEONE ELSE'S account: identity fields plus
+      // role/branch/status. `permissions` must still be a map (it's
+      // re-derived from role on the client, but rules can't cheaply
+      // re-derive and compare it here — see note in chat about the trust
+      // trade-off on Spark).
+      allow update: if activeProfile() && request.auth.uid != uid &&
+        canManageTarget(resource.data.role, resource.data.branch) &&
+        canManageTarget(request.resource.data.role, request.resource.data.branch) &&
+        validRole(request.resource.data.role) &&
+        validStatus(request.resource.data.status) &&
+        branchOk(request.resource.data.role, request.resource.data.branch) &&
+        request.resource.data.permissions is map &&
+        request.resource.data.updated_by == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'first_name', 'last_name', 'name', 'username', 'contact_number',
+          'role', 'branch', 'status', 'active', 'profile_image_url',
+          'permissions', 'updated_at', 'updated_by'
+        ]);
     }
 
-    // Everything else: signed-in required. Branch scoping is Phase 6 work.
+    // Doc ID IS the username, so a `create` here fails automatically if
+    // it's already taken (Firestore treats a write to an existing doc as
+    // an `update`, which nothing below allows).
+    match /usernames/{username} {
+      allow get: if activeProfile();
+      allow create, delete: if activeProfile() && (isOwner() || isManager());
+      allow update: if false;
+    }
+
+    match /user_activity/{activityId} {
+      allow read: if isOwner() ||
+        (isManager() && hasPermission('users_view') && sameBranch(resource.data));
+      // Written directly by the client now (no Cloud Function backend),
+      // so just make sure whoever wrote it is honestly labeled as
+      // themselves.
+      allow create: if activeProfile() &&
+        request.resource.data.administrator_uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /roles/{roleId} {
+      allow read: if activeProfile();
+      allow write: if false;
+    }
+
+    match /sales/{id} {
+      allow read: if activeProfile() && (isOwner() || sameBranch(resource.data));
+      allow create: if hasPermission('sales_manage') &&
+        (isOwner() || sameBranch(request.resource.data));
+      allow update: if hasPermission('sales_manage') &&
+        (isOwner() || (sameBranch(resource.data) && sameBranch(request.resource.data)));
+      allow delete: if isOwner();
+    }
+
+    match /inventory/{id} {
+      allow read: if activeProfile() && (isOwner() || sameBranch(resource.data));
+      allow create: if hasPermission('inventory_manage') &&
+        (isOwner() || sameBranch(request.resource.data));
+      allow update: if hasPermission('inventory_manage') &&
+        (isOwner() || (sameBranch(resource.data) && sameBranch(request.resource.data)));
+      allow delete: if isOwner();
+    }
+
+    match /products/{id} {
+      allow read: if hasPermission('products_view') &&
+        (isOwner() || sameBranch(resource.data));
+      allow create: if hasPermission('products_manage') &&
+        (isOwner() || sameBranch(request.resource.data));
+      allow update: if hasPermission('products_manage') &&
+        (isOwner() || (sameBranch(resource.data) && sameBranch(request.resource.data)));
+      allow delete: if isOwner();
+    }
+
+    match /menuItems/{id} {
+      allow read: if activeProfile() && (isOwner() || sameBranch(resource.data));
+      allow create, update: if hasPermission('products_manage') &&
+        (isOwner() || sameBranch(request.resource.data));
+      allow delete: if isOwner();
+    }
+
+    match /branches/{id} {
+      allow read: if hasPermission('branches_view') || isOwner();
+      allow write: if isOwner();
+    }
+
+    match /reports/{id} {
+      allow read: if hasPermission('reports_view') &&
+        (isOwner() || sameBranch(resource.data));
+      allow create: if hasPermission('reports_export') &&
+        (isOwner() || sameBranch(request.resource.data));
+      allow update, delete: if isOwner();
+    }
+
+    match /notifications/{id} {
+      allow read: if activeProfile() && (isOwner() || sameBranch(resource.data));
+      allow create: if isOwner();
+      allow update: if activeProfile() && (isOwner() || sameBranch(resource.data));
+      allow delete: if isOwner();
+    }
+
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }

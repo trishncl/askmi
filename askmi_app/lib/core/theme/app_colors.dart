@@ -46,4 +46,14 @@ class AppColors {
   static const lightSuccess = Color(0xFFE7F7F3);
   static const lightDanger = Color(0xFFFCEAE4);
   static const lightWarning = Color(0xFFFDF3DC);
+
+  // User-management status / role accents
+static const active = Color(0xFF2FAF9A);      // reuse teal
+static const inactive = Color(0xFF9AA5B1);
+static const pending = Color(0xFFF4B400);     // reuse gold
+static const manager = Color(0xFF5B7CFA);
+
+static const lightActive = Color(0xFFE7F7F3);
+static const lightManager = Color(0xFFEAF0FF);
+static const lightInactive = Color(0xFFF0F2F5);
 }
