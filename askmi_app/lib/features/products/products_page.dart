@@ -191,10 +191,21 @@ class _ProductsPageState extends State<ProductsPage> {
             )
           : null,
       body: StreamBuilder<List<ProductModel>>(
-        key: ValueKey('products_${branch}_${_refreshToken}_$_limit'),
+        // _limit is intentionally NOT part of this key. Keying on it made
+        // the StreamBuilder's Element (and the CustomScrollView beneath
+        // it) get torn down and recreated on every "load more", which
+        // reset scroll position to the top. _refreshToken still forces a
+        // clean remount on manual pull-to-refresh, which is fine — the
+        // user is already at/near the top to trigger that gesture.
+        key: ValueKey('products_${branch}_$_refreshToken'),
         stream: _repo.watchAll(branch: branch, orderByField: 'updatedAt', limit: _limit),
         builder: (context, snap) {
-          final loading = snap.connectionState == ConnectionState.waiting;
+          // Only genuinely-no-data-yet counts as loading — see the
+          // matching comment in sales_page.dart for why connectionState
+          // alone is wrong here (a resubscribe from _limit growing keeps
+          // the old data, which should keep rendering, not flip to
+          // shimmer and shrink the scroll extent).
+          final loading = snap.connectionState == ConnectionState.waiting && !snap.hasData;
           final error = snap.error;
           final all = snap.data ?? const <ProductModel>[];
           final filtered = _query.apply(all);

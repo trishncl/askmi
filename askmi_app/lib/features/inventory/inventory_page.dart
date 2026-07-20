@@ -245,10 +245,21 @@ class _InventoryPageState extends State<InventoryPage> {
             ];
 
             return StreamBuilder<List<InventoryModel>>(
-              key: ValueKey('inventory_list_${branch}_${_refreshToken}_$_limit'),
+              // _limit is intentionally NOT part of this key — including it
+              // tore down and recreated the CustomScrollView (and its
+              // scroll position) on every "load more". _refreshToken alone
+              // still forces a clean remount on manual pull-to-refresh.
+              key: ValueKey('inventory_list_${branch}_$_refreshToken'),
               stream: _repo.watchAll(branch: branch, orderByField: 'date', limit: _limit),
               builder: (context, listSnap) {
-                final loading = summaryLoading || listSnap.connectionState == ConnectionState.waiting;
+                // Only genuinely-no-data-yet counts as loading — a
+                // resubscribe triggered by _limit growing still hands back
+                // the old (valid) data while connectionState briefly shows
+                // `waiting`, so gating on connectionState alone flashed a
+                // short shimmer list in place of the real one and clamped
+                // the scroll position back near the top.
+                final loading = summaryLoading ||
+                    (listSnap.connectionState == ConnectionState.waiting && !listSnap.hasData);
                 final error = summaryError ?? listSnap.error;
                 final loaded = listSnap.data ?? const <InventoryModel>[];
                 final filtered = _query.apply(loaded);

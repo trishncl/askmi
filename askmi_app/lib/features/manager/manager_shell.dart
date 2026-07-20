@@ -5,23 +5,27 @@ import '../../models/user_model.dart';
 import '../../providers/app_providers.dart';
 import '../dashboard/dashboard_page.dart';
 import '../inventory/inventory_page.dart';
-import '../menu/menu_management_page.dart';
 import '../products/products_page.dart';
 import '../reports/reports_page.dart';
 import '../sales/sales_page.dart';
 import '../shell/app_drawer.dart';
 import '../shell/floating_bottom_nav.dart';
-import 'manager_reports_page.dart';
 
 /// PHASE 5 — the Manager's container. Deliberately built the SAME shape as
 /// OwnerShell (AppDrawer + FloatingBottomNav driving one shared `_index`,
-/// AnimatedSwitcher body) and reuses every one of the Owner's actual
-/// screens — DashboardPage, SalesPage, InventoryPage, ProductsPage,
-/// MenuManagementPage, ReportsPage — verbatim. Nothing about those pages
-/// is Owner-specific: they all read branch scope from `BranchScope` and
-/// gate writes off `profile.role`, so simply presenting them inside this
-/// shell instead of OwnerShell is enough to get a fully-scoped Manager
-/// experience with zero duplicated UI or business logic.
+/// AnimatedSwitcher body) and reuses the Owner's actual screens —
+/// DashboardPage, SalesPage, InventoryPage, ProductsPage, ReportsPage —
+/// verbatim. Nothing about those pages is Owner-specific: they all read
+/// branch scope from `BranchScope` and gate writes off `profile.role`, so
+/// simply presenting them inside this shell instead of OwnerShell is
+/// enough to get a fully-scoped Manager experience with zero duplicated
+/// UI or business logic.
+///
+/// Menu Management and Submit Report are intentionally NOT included here
+/// — Manager has no access to either. (MenuManagementPage still exists
+/// for Owner; ManagerReportsPage still exists as a file but is currently
+/// unreachable from any shell — safe to delete outright if it's staying
+/// removed for good, or wire back in later if that changes.)
 ///
 /// The ONE thing this shell does differently from OwnerShell: instead of
 /// the free `_BranchSelector` dropdown, the AppBar shows a plain, disabled
@@ -29,10 +33,6 @@ import 'manager_reports_page.dart';
 /// — `BranchScope` is already locked to `profile.branch` the moment their
 /// profile loads (see BranchScope.applyProfile), so this label is a
 /// read-only reflection of that lock, not a second source of truth.
-///
-/// "Submit Report" is the one Manager-only destination that ISN'T a
-/// shared Owner screen — it's the opposite flow (Manager → Owner note),
-/// already built as ManagerReportsPage.
 class ManagerShell extends StatefulWidget {
   final UserModel profile;
   const ManagerShell({super.key, required this.profile});
@@ -49,9 +49,7 @@ class _ManagerShellState extends State<ManagerShell> {
     DrawerDestination('Sales', Icons.receipt_long_rounded),
     DrawerDestination('Inventory', Icons.inventory_2_rounded),
     DrawerDestination('Products', Icons.lunch_dining_rounded),
-    DrawerDestination('Menu Management', Icons.restaurant_menu_rounded),
     DrawerDestination('Reports', Icons.description_rounded),
-    DrawerDestination('Submit Report', Icons.send_rounded),
   ];
 
   static const _bottomItems = [
@@ -62,7 +60,7 @@ class _ManagerShellState extends State<ManagerShell> {
   ];
 
   /// Maps each bottom-nav slot to its index in [_destinations].
-  static const _bottomToDestination = [0, 1, 2, 5];
+  static const _bottomToDestination = [0, 1, 2, 4];
 
   int get _bottomIndex {
     final i = _bottomToDestination.indexOf(_index);
@@ -80,11 +78,7 @@ class _ManagerShellState extends State<ManagerShell> {
       case 3:
         return const ProductsPage();
       case 4:
-        return const MenuManagementPage();
-      case 5:
         return const ReportsPage();
-      case 6:
-        return const ManagerReportsPage();
       default:
         return const SizedBox.shrink();
     }

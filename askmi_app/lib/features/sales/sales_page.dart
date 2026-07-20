@@ -249,7 +249,15 @@ class _SalesPageState extends State<SalesPage> {
           limit: _limit,
         ),
         builder: (context, snap) {
-          final loading = snap.connectionState == ConnectionState.waiting;
+          // NOT just `connectionState == waiting` — every time _limit grows,
+          // watchAll(...) returns a brand-new Stream instance, and
+          // StreamBuilder briefly flips back to `waiting` for that
+          // resubscribe while still holding the OLD (valid) data. Treating
+          // that as "loading" replaced the real list with short shimmer
+          // placeholders on every "load more", which is what made the
+          // scroll position clamp back near the top. Only the very first
+          // load (genuinely no data yet) should show shimmer.
+          final loading = snap.connectionState == ConnectionState.waiting && !snap.hasData;
           final error = snap.error;
           final all = snap.data ?? const <SaleModel>[];
           final filtered = _query.apply(all);
