@@ -42,6 +42,14 @@ service cloud.firestore {
       return data.branch == profile().data.branch;
     }
 
+    // menuItems.branch is a LIST (an item can serve several branches at
+    // once) — sameBranch()'s `==` comparison against the profile's single
+    // branch string would always be false for it. This is the list
+    // equivalent: "is my branch one of the branches this item belongs to."
+    function branchListContains(data) {
+      return data.branch is list && profile().data.branch in data.branch;
+    }
+
     function canReadUser(uid, data) {
       return activeProfile() && (
         request.auth.uid == uid ||
@@ -143,9 +151,19 @@ service cloud.firestore {
     }
 
     match /sales/{id} {
-      allow read: if activeProfile() && (isOwner() || sameBranch(resource.data));
+      // Owner: everything. Manager: own branch. Cashier (and anyone else):
+      // only transactions they personally created — the POS module's
+      // "Cashiers can view only transactions they created" rule. Checked
+      // by role rather than only by cashierUid so a Manager doing manual
+      // entry for a branch still sees the whole branch's history.
+      allow read: if activeProfile() && (
+        isOwner() ||
+        (isManager() && sameBranch(resource.data)) ||
+        resource.data.cashierUid == request.auth.uid
+      );
       allow create: if hasPermission('sales_manage') &&
-        (isOwner() || sameBranch(request.resource.data));
+        (isOwner() || sameBranch(request.resource.data)) &&
+        request.resource.data.cashierUid == request.auth.uid;
       allow update: if hasPermission('sales_manage') &&
         (isOwner() || (sameBranch(resource.data) && sameBranch(request.resource.data)));
       allow delete: if isOwner();
@@ -167,14 +185,30 @@ service cloud.firestore {
         (isOwner() || sameBranch(request.resource.data));
       allow update: if hasPermission('products_manage') &&
         (isOwner() || (sameBranch(resource.data) && sameBranch(request.resource.data)));
+      // POS checkout stock decrement (PosSalesRepository.checkout): a
+      // Cashier can't otherwise touch `products` at all (products_manage
+      // is false for that role — see role_permissions.dart), but selling
+      // an item still has to move stock. This grants ONLY that: same
+      // branch, and the write touches nothing but stock/soldStock/
+      // updatedAt — never price, name, category, or anything else a real
+      // products_manage permission would be needed for.
+      allow update: if hasPermission('sales_manage') &&
+        sameBranch(resource.data) && sameBranch(request.resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['stock', 'soldStock', 'updatedAt']);
       allow delete: if isOwner();
     }
 
     match /menuItems/{id} {
-      allow read: if activeProfile() && (isOwner() || sameBranch(resource.data));
+      allow read: if activeProfile() && (isOwner() || branchListContains(resource.data));
       allow create, update: if hasPermission('products_manage') &&
-        (isOwner() || sameBranch(request.resource.data));
+        (isOwner() || branchListContains(request.resource.data));
       allow delete: if isOwner();
+    }
+
+    match /menuCategories/{id} {
+      allow read: if activeProfile();
+      allow create, update, delete: if hasPermission('products_manage') || isOwner();
     }
 
     match /branches/{id} {

@@ -19,8 +19,10 @@ class AppDrawer extends StatelessWidget {
   final ValueChanged<int> onSelected;
   final VoidCallback onLogout;
 
+  final Map<int, String> sectionHeaders;
+
   /// Index at which each section header appears, keyed by index.
-  static const sectionHeaders = <int, String>{
+  static const _defaultSectionHeaders = <int, String>{
     0: 'MAIN',
     1: 'OPERATIONS',
     5: 'INSIGHTS',
@@ -34,6 +36,7 @@ class AppDrawer extends StatelessWidget {
     required this.destinations,
     required this.onSelected,
     required this.onLogout,
+    this.sectionHeaders = _defaultSectionHeaders,
   });
 
   @override
@@ -43,16 +46,16 @@ class AppDrawer extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 18, 18, 12),
               child: Row(
                 children: [
-                  const AppLogo(size: 42),
-                  const SizedBox(width: 10),
+                  AppLogo(size: 42),
+                  SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'AskMi',
                         style: TextStyle(
                           fontWeight: FontWeight.w800,

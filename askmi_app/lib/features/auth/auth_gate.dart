@@ -5,6 +5,8 @@ import '../../providers/app_providers.dart';
 import 'login_page.dart';
 import 'signed_in_placeholder_page.dart';
 import '../shell/owner_shell.dart';
+import '../manager/manager_shell.dart';
+import '../cashier/cashier_shell.dart';
 
 /// PHASE 2 — root routing widget. Splash's timer sends everyone here
 /// (signed in or not) after the intro animation; from this point on,
@@ -48,10 +50,11 @@ class AuthGate extends StatelessWidget {
     switch (profile.role) {
       case 'Owner':
         return OwnerShell(profile: profile);
-      // PHASE 5 adds ManagerShell and CashierPosPage here. Until then those
-      // roles land on the placeholder rather than being handed the Owner's
-      // shell — giving a Cashier the Owner UI would be a real privilege leak,
-      // not just a cosmetic bug.
+      case 'Manager':
+        return ManagerShell(profile: profile);
+      case 'Cashier':
+      case 'Staff': // legacy role name some older docs may still carry
+        return CashierShell(profile: profile);
       default:
         return SignedInPlaceholderPage(profile: profile);
     }

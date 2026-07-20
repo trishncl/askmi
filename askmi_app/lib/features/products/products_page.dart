@@ -17,18 +17,18 @@ import 'widgets/products_filter_bar.dart';
 /// PHASE 4 — Owner build (4th: Products). Products Management: search,
 /// filters, sorting, add/edit, enable/disable (never a hard delete).
 ///
-/// Lives inside OwnerShell, so the AppBar (drawer button, "Products" title,
-/// branch selector, notifications) is already supplied by the shell — this
-/// page only owns the body.
+/// Lives inside OwnerShell AND ManagerShell — both shells supply the
+/// AppBar/drawer/nav around it, so this page only owns the body. Branch
+/// scoping comes entirely from `BranchScope.filterOrNull`: for an Owner
+/// that's whatever the shell's selector is set to, for a Manager it's
+/// permanently their own branch (see BranchScope's doc comment) — this
+/// page doesn't need to know or care which, it just reads one value.
 ///
-/// PERMISSIONS: enforced here in the UI (Owner: full access · Manager:
-/// branch-locked add/edit · Cashier: view-only) because there's no
-/// Manager/Cashier shell yet to lock the branch selector for them — see
-/// `_effectiveBranch` below. Firestore-side branch enforcement is the
-/// project's Phase 6 hardening pass (firestore.rules currently allows any
-/// signed-in user to read/write any branch — see that file's header
-/// comment); until then this UI gate is the only enforcement, so it should
-/// not be treated as a substitute for finishing Phase 6.
+/// PERMISSIONS: write access (`_canWrite`) is still gated here in the UI
+/// (Owner + Manager can add/edit, Cashier is view-only). firestore.rules
+/// enforces the branch match server-side (`sameBranch()` on the
+/// `products` collection) as defense in depth — this UI gate is not the
+/// only enforcement.
 class ProductsPage extends StatefulWidget {
   const ProductsPage({super.key});
 
@@ -83,11 +83,6 @@ class _ProductsPageState extends State<ProductsPage> {
   /// regardless of that selector — there's no UI for them to change it
   /// yet, and defaulting to "everything" for a branch-scoped role would be
   /// the wrong failure mode.
-  String? _effectiveBranch(UserModel profile, String? branchScopeFilter) {
-    if (profile.role == 'Owner') return branchScopeFilter;
-    return profile.branch;
-  }
-
   bool _canWrite(UserModel profile) => profile.role == 'Owner' || profile.role == 'Manager';
 
   Future<void> _openForm({ProductModel? existing}) async {
@@ -176,13 +171,12 @@ class _ProductsPageState extends State<ProductsPage> {
   @override
   Widget build(BuildContext context) {
     final profile = context.watch<UserProfileProvider>().profile;
-    final branchScope = context.watch<BranchScope>().filterOrNull;
+    final branch = context.watch<BranchScope>().filterOrNull;
 
     if (profile == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final branch = _effectiveBranch(profile, branchScope);
     final canWrite = _canWrite(profile);
 
     return Scaffold(

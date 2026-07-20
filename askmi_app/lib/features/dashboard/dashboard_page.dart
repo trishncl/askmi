@@ -45,6 +45,10 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     final branch = context.watch<BranchScope>().filterOrNull;
     final scopeLabel = branch ?? 'Organization-wide overview';
+    // This page is shared by OwnerShell AND ManagerShell (see BranchScope's
+    // doc comment) — the greeting has to reflect whoever is actually
+    // signed in rather than assuming Owner.
+    final roleLabel = context.watch<UserProfileProvider>().profile?.role ?? 'there';
 
     return RefreshIndicator(
       color: AppColors.teal,
@@ -70,7 +74,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
                 children: [
-                  WelcomeHeader(roleLabel: 'Owner', scopeLabel: scopeLabel),
+                  WelcomeHeader(roleLabel: roleLabel, scopeLabel: scopeLabel),
                   const SizedBox(height: 18),
                   if (error != null)
                     ErrorStateCard(

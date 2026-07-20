@@ -27,4 +27,9 @@ class SalesRepository extends FirestoreRepository<SaleModel> {
         .snapshots()
         .map((snap) => snap.docs.map(fromDoc).toList());
   }
+
+  Future<bool> hasAnySalesFor(String productName) async {
+    final snap = await collection.where('product', isEqualTo: productName).limit(1).get();
+    return snap.docs.isNotEmpty;
+  }
 }

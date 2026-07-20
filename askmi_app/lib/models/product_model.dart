@@ -41,7 +41,8 @@ class ProductModel {
   final String status; // ProductStatusValues
   final String movementStatus; // MovementStatusValues
   final String description;
-  final String image; // URL, optional
+  final String image;
+  final int soldStock;  
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -56,6 +57,7 @@ class ProductModel {
     required this.movementStatus,
     this.description = '',
     this.image = '',
+    this.soldStock = 0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -90,6 +92,7 @@ class ProductModel {
     String? movementStatus,
     String? description,
     String? image,
+    int? soldStock,
     DateTime? updatedAt,
   }) {
     return ProductModel(
@@ -103,6 +106,7 @@ class ProductModel {
       movementStatus: movementStatus ?? this.movementStatus,
       description: description ?? this.description,
       image: image ?? this.image,
+      soldStock: soldStock ?? this.soldStock,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -121,6 +125,9 @@ class ProductModel {
       movementStatus: _asString(d['movement_status'], MovementStatusValues.normal),
       description: _asString(d['description']),
       image: _asString(d['image']),
+      soldStock: (d['soldStock'] ?? 0) is int
+          ? (d['soldStock'] ?? 0) as int
+          : (d['soldStock'] as num).toInt(),
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (d['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -146,6 +153,7 @@ class ProductModel {
         'movement_status': movementStatus,
         'description': description,
         'image': image,
+        'soldStock': soldStock,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };

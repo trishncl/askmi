@@ -37,6 +37,17 @@ class ProductsRepository extends FirestoreRepository<ProductModel> {
   Future<void> setStatus(String id, String status) =>
       collection.doc(id).update({'status': status, 'updatedAt': Timestamp.now()});
 
+  Future<ProductModel?> findByNameInBranch(String name, String branch) async {
+    final normalized = name.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    final snap = await collection.where('branch', isEqualTo: branch).get();
+    for (final doc in snap.docs) {
+      final docName = (doc.data()['name'] as String? ?? '').trim().toLowerCase();
+      if (docName == normalized) return fromDoc(doc);
+    }
+    return null;
+  }
+
   /// Called after a completed sale. Never lets stock go negative — a sale
   /// larger than remaining stock clamps to 0 rather than erroring, since
   /// blocking the whole checkout over a stock-count mismatch is worse than

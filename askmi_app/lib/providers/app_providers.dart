@@ -104,14 +104,42 @@ class UserProfileProvider extends ChangeNotifier {
 ///
 /// In Phase 5 the Manager shell will lock this to the manager's own branch
 /// and hide the selector entirely.
+/// PHASE 4 — which branch the app is currently filtering to. Every
+/// dashboard/sales/inventory/products/reports page reads this instead of
+/// keeping its own copy, so a single source of truth drives all of them
+/// at once.
+///
+/// PHASE 5 — this is also THE mechanism that pins a Manager to their own
+/// branch. [applyProfile] is called (via a ProxyProvider in app.dart)
+/// every time the signed-in user's profile loads or changes. For anyone
+/// whose role isn't Owner (see [isRoleBranchLocked]), that permanently
+/// overrides [selected]/[filterOrNull] to the branch on their own
+/// `users/{uid}` document and turns [select] into a no-op — so a Manager
+/// can never view or write another branch's data, even if some other
+/// widget tries to change the selection, and every existing Owner page
+/// that already reads `BranchScope.filterOrNull` (Dashboard, Sales,
+/// Inventory, Products, Reports, Menu Management) gets this for free
+/// with no per-page changes.
 class BranchScope extends ChangeNotifier {
   String _selected = kAllBranches;
-  String get selected => _selected;
 
-  /// Null when "All Branches" — repositories treat null as "don't filter".
-  String? get filterOrNull => _selected == kAllBranches ? null : _selected;
+  String? _lockedBranch;
+
+  bool get isLocked => _lockedBranch != null;
+
+  String get selected => _lockedBranch ?? _selected;
+
+  String? get filterOrNull => selected == kAllBranches ? null : selected;
+
+  void applyProfile(UserModel? profile) {
+    final next = (profile != null && isRoleBranchLocked(profile.role)) ? profile.branch : null;
+    if (next == _lockedBranch) return;
+    _lockedBranch = next;
+    notifyListeners();
+  }
 
   void select(String branch) {
+    if (isLocked) return; // Locked roles can't change their own branch.
     if (branch == _selected) return;
     _selected = branch;
     notifyListeners();

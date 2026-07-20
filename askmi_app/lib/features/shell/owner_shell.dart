@@ -6,6 +6,7 @@ import '../../models/user_model.dart';
 import '../../providers/app_providers.dart';
 import '../dashboard/dashboard_page.dart';
 import '../inventory/inventory_page.dart';
+import '../menu/menu_management_page.dart';
 import '../products/products_page.dart';
 import '../reports/reports_page.dart';
 import '../sales/sales_page.dart';
@@ -13,8 +14,9 @@ import 'app_drawer.dart';
 import 'coming_soon_page.dart';
 import 'floating_bottom_nav.dart';
 import 'speed_dial_fab.dart';
-import '../settings/settings_page.dart';   // ← added
-/// PHASE 4 — the Owner's container: AppBar (branch selector, notifications,
+import '../settings/settings_page.dart';
+
+/// PHASE 4 — the Owner's container: AppBar (branch selector,
 /// avatar), navigation drawer, floating bottom nav, and speed-dial FAB.
 ///
 /// Drawer and bottom nav drive the SAME index, so the two stay in sync
@@ -36,21 +38,20 @@ class _OwnerShellState extends State<OwnerShell> {
     DrawerDestination('Sales', Icons.receipt_long_rounded),
     DrawerDestination('Inventory', Icons.inventory_2_rounded),
     DrawerDestination('Products', Icons.lunch_dining_rounded),
-    DrawerDestination('Branches', Icons.store_rounded),
+    DrawerDestination('Menu Management', Icons.restaurant_menu_rounded),
     DrawerDestination('Reports', Icons.description_rounded),
     DrawerDestination('User Management', Icons.people_alt_rounded),
-    DrawerDestination('Settings', Icons.settings_rounded),
   ];
 
   static const _bottomItems = [
     BottomNavItem('Home', Icons.home_outlined, Icons.home_rounded),
-    BottomNavItem('Branches', Icons.store_outlined, Icons.store_rounded),
+    BottomNavItem('Menu', Icons.restaurant_menu_outlined, Icons.restaurant_menu_rounded),
     BottomNavItem('Reports', Icons.description_outlined, Icons.description_rounded),
-    BottomNavItem('User Management', Icons.people_alt_outlined, Icons.people_alt_rounded),
+    BottomNavItem('Users', Icons.people_alt_outlined, Icons.people_alt_rounded),
   ];
 
   /// Maps each bottom-nav slot to its index in [_destinations].
-  static const _bottomToDestination = [0, 4, 5, 7];
+  static const _bottomToDestination = [0, 4, 5, 6];
 
   int get _bottomIndex {
     final i = _bottomToDestination.indexOf(_index);
@@ -69,10 +70,11 @@ class _OwnerShellState extends State<OwnerShell> {
         return const InventoryPage();
       case 3:
         return const ProductsPage();
+      case 4:
+        return const MenuManagementPage();
       case 5:
         return const ReportsPage();
       case 6:
-      case 7:
         return const SettingsPage();
       default:
         return ComingSoonPage(title: _destinations[index].label);
@@ -99,6 +101,15 @@ class _OwnerShellState extends State<OwnerShell> {
           onTap: () => _notYet(context, 'Add Inventory'),
         ),
         SpeedDialAction(
+          label: 'Add Menu Item',
+          icon: Icons.restaurant_menu_rounded,
+          // Routes through _selectIndex (not a bare setState) so that if
+          // "All Branches" is currently selected, it gets nudged to a
+          // real branch the same way the drawer/bottom-nav do — see
+          // _selectIndex's doc comment.
+          onTap: () => _selectIndex(4),
+        ),
+        SpeedDialAction(
           label: 'Generate Report',
           icon: Icons.description_rounded,
           onTap: () => _notYet(context, 'Generate Report'),
@@ -108,15 +119,29 @@ class _OwnerShellState extends State<OwnerShell> {
           icon: Icons.person_add_alt_1_rounded,
           // User Management exists now, so jump to it (same pattern as
           // "Add Sale" above) rather than the old placeholder snackbar.
-          onTap: () => setState(() => _index = 7),   // ← was: () => _notYet(context, 'Add User')
+          onTap: () => setState(() => _index = 6),
         ),
       ],
     );
   }
 
+  /// Menu items span every branch's POS catalog in one view — there's no
+  /// per-branch picker for this page, it's always "All Branches" (see
+  /// `isMenuManagementTab` in build() below, which hides the selector
+  /// entirely while this tab is active). Switching INTO the tab resets
+  /// BranchScope back to "All Branches" so it doesn't silently carry over
+  /// whatever a different tab had picked earlier.
+  void _selectIndex(int i) {
+    setState(() => _index = i);
+    if (i == 4) {
+      context.read<BranchScope>().select(kAllBranches);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final branchScope = context.watch<BranchScope>();
+    final isMenuManagementTab = _index == 4;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -128,17 +153,17 @@ class _OwnerShellState extends State<OwnerShell> {
           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 19),
         ),
         actions: [
-          _BranchSelector(
-            value: branchScope.selected,
-            onChanged: branchScope.select,
-          ),
-          IconButton(
-            tooltip: 'Notifications',
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Notifications arrive in a later sprint.')),
+          // Owners always keep the free branch selector, EXCEPT on Menu
+          // Management, which always shows every branch's items and has
+          // no selector to offer. Also hides defensively if a non-Owner
+          // profile somehow ends up in OwnerShell (it shouldn't — AuthGate
+          // routes by role).
+          if (!branchScope.isLocked && !isMenuManagementTab)
+            _BranchSelector(
+              value: branchScope.selected,
+              items: kBranchNamesWithAll,
+              onChanged: branchScope.select,
             ),
-          ),
           Padding(
             padding: const EdgeInsets.only(right: 12, left: 2),
             child: CircleAvatar(
@@ -163,7 +188,7 @@ class _OwnerShellState extends State<OwnerShell> {
         selectedIndex: _index,
         destinations: _destinations,
         onSelected: (i) {
-          setState(() => _index = i);
+          _selectIndex(i);
           Navigator.pop(context);
         },
         onLogout: () => context.read<AuthState>().service.signOut(),
@@ -184,7 +209,7 @@ class _OwnerShellState extends State<OwnerShell> {
       bottomNavigationBar: FloatingBottomNav(
         currentIndex: _bottomIndex,
         items: _bottomItems,
-        onTap: (i) => setState(() => _index = _bottomToDestination[i]),
+        onTap: (i) => _selectIndex(_bottomToDestination[i]),
       ),
     );
   }
@@ -198,9 +223,10 @@ class _OwnerShellState extends State<OwnerShell> {
 
 class _BranchSelector extends StatelessWidget {
   final String value;
+  final List<String> items;
   final ValueChanged<String> onChanged;
 
-  const _BranchSelector({required this.value, required this.onChanged});
+  const _BranchSelector({required this.value, required this.items, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +248,7 @@ class _BranchSelector extends StatelessWidget {
             color: AppColors.textDark,
           ),
           items: [
-            for (final b in kBranchNamesWithAll)
+            for (final b in items)
               DropdownMenuItem(
                 value: b,
                 child: Row(

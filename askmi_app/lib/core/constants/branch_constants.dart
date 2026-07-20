@@ -17,3 +17,5 @@ const List<String> kBranchNames = [
 /// real branch).
 const String kAllBranches = 'All Branches';
 const List<String> kBranchNamesWithAll = [kAllBranches, ...kBranchNames];
+
+bool isRoleBranchLocked(String role) => role != 'Owner';

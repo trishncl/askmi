@@ -40,24 +40,21 @@ class _SaleFormPageState extends State<SaleFormPage> {
   late DateTime _createdAt;
   bool _saving = false;
 
+  /// True for any non-Owner (Manager/Cashier) — see [isRoleBranchLocked].
+  bool _branchLocked = false;
+
   @override
   void initState() {
     super.initState();
     final e = widget.existing;
+    final profile = context.read<UserProfileProvider>().profile;
+    _branchLocked = profile != null && isRoleBranchLocked(profile.role);
     _productCtrl = TextEditingController(text: e?.product ?? '');
     _qtyCtrl = TextEditingController(text: e == null ? '1' : '${e.quantity}');
     _priceCtrl = TextEditingController(
         text: e == null ? '' : e.unitPrice.toStringAsFixed(2));
-    _branch = resolveDropdownValue(
-      value: e?.branch,
-      items: kBranchNames,
-      fallback: kBranchNames.first,
-    );
-    _paymentMethod = resolveDropdownValue(
-      value: e?.paymentMethod,
-      items: const ['Cash', 'GCash', 'Card'],
-      fallback: 'Cash',
-    );
+    _branch = e?.branch ?? (_branchLocked ? profile!.branch : kBranchNames.first);
+    _paymentMethod = e?.paymentMethod ?? 'Cash';
     _createdAt = e?.createdAt ?? DateTime.now();
   }
 

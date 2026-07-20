@@ -9,9 +9,9 @@ class FirestoreCollections {
   static const sales = 'sales';
   static const products = 'products'; // Products Management catalog (name/price/stock/branch)// movement tracking, NOT the POS catalog
   static const inventory = 'inventory';
-  static const menuItems = 'menuItems'; // POS catalog — separate from products
+  static const menuItems = 'menuItems'; 
+  static const menuCategories = 'menuCategories';// POS catalog — separate from products
   static const branches = 'branches';
   static const reports = 'reports';
-  static const notifications = 'notifications';
   static const userActivity = 'user_activity';
 }

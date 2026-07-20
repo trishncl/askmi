@@ -54,8 +54,11 @@ class _SalesPageState extends State<SalesPage> {
     super.dispose();
   }
 
+  bool _loadingMore = false;
+  bool _reachedEnd = false;
+
   void _maybeLoadMore() {
-    if (!_scrollCtrl.hasClients) return;
+    if (!_scrollCtrl.hasClients || _loadingMore || _reachedEnd) return;
     final nearBottom =
         _scrollCtrl.position.pixels >= _scrollCtrl.position.maxScrollExtent - 300;
     if (nearBottom) {
@@ -237,7 +240,9 @@ class _SalesPageState extends State<SalesPage> {
         label: const Text('New Sale'),
       ),
       body: StreamBuilder<List<SaleModel>>(
-        key: ValueKey('sales_${_refreshToken}_$_limit'),
+        // _limit is intentionally NOT part of this key — see comment in
+        // MenuManagementPage for why keying on it caused the scroll jank.
+        key: ValueKey('sales_$_refreshToken'),
         stream: _repo.watchAll(
           branch: branch,
           orderByField: 'createdAt',
@@ -252,12 +257,25 @@ class _SalesPageState extends State<SalesPage> {
           final total = filtered.fold<double>(0, (sum, s) => sum + s.amount);
           final reachedEnd = all.length < _limit;
 
+          if (!loading && (_loadingMore || _reachedEnd != reachedEnd)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _loadingMore = false;
+                  _reachedEnd = reachedEnd;
+                });
+              }
+            });
+          }
+
           return RefreshIndicator(
             color: AppColors.teal,
             onRefresh: () async {
               setState(() {
                 _refreshToken++;
                 _limit = _pageSize;
+                _loadingMore = false;
+                _reachedEnd = false;
               });
               await Future<void>.delayed(const Duration(milliseconds: 500));
             },

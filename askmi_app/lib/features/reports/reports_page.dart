@@ -116,15 +116,12 @@ class _ReportsPageState extends State<ReportsPage> {
   /// shared BranchScope selector — enforced here defensively so the rule
   /// holds even before a Manager-specific shell exists to hide the
   /// selector outright.
-  String? _effectiveBranch(String? scopeBranch) {
-    if (_isOwner) return scopeBranch;
-    return _currentProfile?.branch;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final scopeBranch = context.watch<BranchScope>().filterOrNull;
-    final branch = _effectiveBranch(scopeBranch);
+    // BranchScope is already locked to the Manager's own branch (see its
+    // doc comment) — this page just reads whatever it resolves to, same
+    // as every other module, instead of re-deriving the lock itself.
+    final branch = context.watch<BranchScope>().filterOrNull;
     final branchLabel = branch ?? 'All Branches';
 
     // Branch Performance is Owner-only — fall back to Sales if a
