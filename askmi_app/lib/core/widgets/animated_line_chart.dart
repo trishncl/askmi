@@ -157,10 +157,25 @@ class _LineChartPainter extends CustomPainter {
       drawPath.addPath(m.extractPath(0, m.length * progress), Offset.zero);
     }
 
-    // Gradient fill under the revealed portion.
-    if (progress > 0.02) {
+    // Gradient fill under the revealed portion. Only meaningful with 2+
+    // points — with a single point (e.g. a "Today" trend with one bucket)
+    // there's no line to spread a fill under, so skip it entirely rather
+    // than let the old width-based formula draw a wedge across the whole
+    // chart.
+    if (progress > 0.02 && values.length > 1) {
+      // Interpolate the fill's right edge from the actual point
+      // positions (not raw chart width) so it always lines up with
+      // where the line has actually been drawn to.
+      final revealIndex = (progress * (values.length - 1)).clamp(0, values.length - 1);
+      final lo = revealIndex.floor();
+      final hi = revealIndex.ceil();
+      final t = revealIndex - lo;
+      final pLo = pointAt(lo);
+      final pHi = pointAt(hi);
+      final tipX = pLo.dx + (pHi.dx - pLo.dx) * t;
+
       final fillPath = Path.from(drawPath)
-        ..lineTo(_leftPad + chartW * progress, size.height - _bottomPad)
+        ..lineTo(tipX, size.height - _bottomPad)
         ..lineTo(_leftPad, size.height - _bottomPad)
         ..close();
       canvas.drawPath(
@@ -177,14 +192,16 @@ class _LineChartPainter extends CustomPainter {
       );
     }
 
-    canvas.drawPath(
-      drawPath,
-      Paint()
-        ..color = AppColors.teal
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round,
-    );
+    if (values.length > 1) {
+      canvas.drawPath(
+        drawPath,
+        Paint()
+          ..color = AppColors.teal
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3
+          ..strokeCap = StrokeCap.round,
+      );
+    }
 
     // Dots + x labels, fading in as the line reaches them.
     for (int i = 0; i < values.length; i++) {
