@@ -47,7 +47,8 @@ service cloud.firestore {
     // branch string would always be false for it. This is the list
     // equivalent: "is my branch one of the branches this item belongs to."
     function branchListContains(data) {
-      return data.branch is list && profile().data.branch in data.branch;
+      return (data.branch is list && profile().data.branch in data.branch) ||
+        (data.branch is string && data.branch == profile().data.branch);
     }
 
     function canReadUser(uid, data) {
@@ -200,7 +201,7 @@ service cloud.firestore {
     }
 
     match /menuItems/{id} {
-      allow read: if activeProfile() && (isOwner() || branchListContains(resource.data));
+      allow read: if true;
       allow create, update: if hasPermission('products_manage') &&
         (isOwner() || branchListContains(request.resource.data));
       allow delete: if isOwner();
