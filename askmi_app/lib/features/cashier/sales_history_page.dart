@@ -36,6 +36,13 @@ class _SalesHistoryPageState extends State<SalesHistoryPage> {
   static const _pageSize = 25;
   int _limit = _pageSize;
 
+  // Set from the StreamBuilder each time data arrives. Once true, there is
+  // nothing more to fetch, so the scroll listener must stop bumping _limit —
+  // otherwise a short list (fewer docs than a page) keeps the scroll
+  // position "near bottom" on every micro-scroll, firing setState dozens of
+  // times a second and resubscribing the stream each time.
+  bool _reachedEnd = false;
+
   @override
   void initState() {
     super.initState();
@@ -51,7 +58,7 @@ class _SalesHistoryPageState extends State<SalesHistoryPage> {
   }
 
   void _maybeLoadMore() {
-    if (!_scrollCtrl.hasClients) return;
+    if (!_scrollCtrl.hasClients || _reachedEnd) return;
     final nearBottom =
         _scrollCtrl.position.pixels >= _scrollCtrl.position.maxScrollExtent - 300;
     if (nearBottom) setState(() => _limit += _pageSize);
@@ -65,7 +72,7 @@ class _SalesHistoryPageState extends State<SalesHistoryPage> {
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: StreamBuilder<List<SaleTransactionModel>>(
-        key: ValueKey('pos_history_${_refreshToken}_$_limit'),
+        key: ValueKey('pos_history_$_refreshToken'),
         stream: _repo.watchOwnTransactions(cashierUid: profile.uid, limit: _limit),
         builder: (context, snap) {
           final loading = snap.connectionState == ConnectionState.waiting;
@@ -74,6 +81,7 @@ class _SalesHistoryPageState extends State<SalesHistoryPage> {
           final filtered = _query.apply(all);
           final total = filtered.fold<double>(0, (sum, s) => sum + s.total);
           final reachedEnd = all.length < _limit;
+          if (!loading && error == null) _reachedEnd = reachedEnd;
 
           return RefreshIndicator(
             color: AppColors.teal,
@@ -81,6 +89,7 @@ class _SalesHistoryPageState extends State<SalesHistoryPage> {
               setState(() {
                 _refreshToken++;
                 _limit = _pageSize;
+                _reachedEnd = false;
               });
               await Future<void>.delayed(const Duration(milliseconds: 500));
             },
