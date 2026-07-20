@@ -8,7 +8,6 @@ import '../../core/widgets/gradient_button.dart';
 import '../../models/sale_model.dart';
 import '../../providers/app_providers.dart';
 import '../../repositories/sales_repository.dart';
-import '../../core/utils/dropdown_utils.dart';
 import '../../core/widgets/safe_dropdown_form_field.dart';
 
 /// Add / edit a sale. Doubles as both by taking an optional [existing].
@@ -330,6 +329,7 @@ class _SaleFormPageState extends State<SaleFormPage> {
     );
   }
 
+  // ignore: unused_element
   Widget _dropdown({
     required String label,
     required IconData icon,

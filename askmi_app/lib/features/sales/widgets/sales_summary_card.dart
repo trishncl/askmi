@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+// ignore: unused_import
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/animated_count.dart';
 

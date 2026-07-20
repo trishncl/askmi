@@ -1,3 +1,5 @@
+// ignore_for_file: duplicate_ignore, prefer_const_constructors
+
 import 'dart:convert';
 
 import 'package:csv/csv.dart';
@@ -96,6 +98,7 @@ class ReportExporter {
                   ],
                   pw.Text(
                     'AskMi — $reportTitle',
+                    // ignore: prefer_const_constructors
                     style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
                   ),
                 ],

@@ -366,6 +366,7 @@ class _UserFormPageState extends State<UserFormPage> {
     );
   }
 
+  // ignore: unused_element
   Widget _dropdown({
     required String label,
     required IconData icon,

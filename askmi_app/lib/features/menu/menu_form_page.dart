@@ -1,3 +1,4 @@
+// ignore_for_file: unused_import
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -12,9 +13,6 @@ import '../../providers/app_providers.dart';
 import '../../repositories/menu_repository.dart';
 import '../../repositories/products_repository.dart';
 import 'widgets/pos_preview_card.dart';
-
-/// Add / edit a menu item. Same "discard changes?" + async duplicate-name
-/// guard pattern as ProductFormPage.
 class MenuFormPage extends StatefulWidget {
   final MenuItemModel? existing;
   final List<MenuCategoryModel> categories;

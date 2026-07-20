@@ -1,4 +1,5 @@
 import '../../models/sale_transaction_model.dart';
+// ignore: unused_shown_name
 import '../sales/sales_filters.dart' show DateRangeFilter, DateRangeFilterLabel;
 
 export '../sales/sales_filters.dart' show DateRangeFilter, DateRangeFilterLabel;

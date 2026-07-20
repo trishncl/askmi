@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/role_permissions.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
+// ignore: unused_import
 import '../../models/user_activity_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/app_providers.dart';

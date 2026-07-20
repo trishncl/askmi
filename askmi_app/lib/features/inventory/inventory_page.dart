@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -15,6 +17,7 @@ import 'inventory_form_page.dart';
 import 'widgets/inventory_alert_card.dart';
 import 'widgets/inventory_filter_bar.dart';
 import 'widgets/stock_item_card.dart';
+// ignore: unused_import
 import 'widgets/stock_status_badge.dart';
 
 /// PHASE 4 — Owner build (3rd: Inventory). Daily stock records & ingredient

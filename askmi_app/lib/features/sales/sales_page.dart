@@ -1,14 +1,11 @@
-import 'dart:io';
-import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../models/sale_model.dart';
+import '../../models/user_model.dart';
 import '../../providers/app_providers.dart';
 import '../../repositories/sales_repository.dart';
 import 'sale_form_page.dart';
@@ -138,107 +135,29 @@ class _SalesPageState extends State<SalesPage> {
     }
   }
 
-  Future<void> _showExportSheet(List<SaleModel> rows) async {
-    if (rows.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Nothing to export.')));
-      return;
-    }
-    await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 10),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 4),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Export',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                    color: AppColors.textDark,
-                  ),
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.table_chart_outlined, color: AppColors.teal),
-              title: const Text('Export as CSV'),
-              subtitle: Text('${rows.length} filtered transactions'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _exportCsv(rows);
-              },
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _exportCsv(List<SaleModel> rows) async {
-    try {
-      final data = <List<String>>[
-        ['Reference', 'Product', 'Qty', 'Unit Price', 'Amount', 'Payment', 'Branch', 'Cashier', 'Date'],
-        for (final s in rows)
-          [
-            Fmt.txnRef(s.id),
-            s.product,
-            '${s.quantity}',
-            s.unitPrice.toStringAsFixed(2),
-            s.amount.toStringAsFixed(2),
-            s.paymentMethod,
-            s.branch,
-            s.cashierName,
-            Fmt.dateTime.format(s.createdAt),
-          ],
-      ];
-      final csv = const ListToCsvConverter().convert(data);
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/askmi_sales_export.csv');
-      await file.writeAsString(csv);
-      await SharePlus.instance.share(
-        ShareParams(files: [XFile(file.path)], text: "AA's Lomi — Sales export"),
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Export failed: $e')));
-      }
-    }
-  }
+  /// Owners and Managers oversee sales but don't ring them up — only
+  /// Cashiers (and legacy 'Staff' docs) create new sale transactions.
+  bool _canCreateSale(UserModel? profile) =>
+      profile != null && profile.displayRole != 'Owner' && profile.displayRole != 'Manager';
 
   @override
   Widget build(BuildContext context) {
     final branch = context.watch<BranchScope>().filterOrNull;
     final branchLabel = branch ?? 'All Branches';
+    final profile = context.watch<UserProfileProvider>().profile;
+    final canCreateSale = _canCreateSale(profile);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.teal,
-        foregroundColor: Colors.white,
-        onPressed: () => _openForm(),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('New Sale'),
-      ),
+      floatingActionButton: canCreateSale
+          ? FloatingActionButton.extended(
+              backgroundColor: AppColors.teal,
+              foregroundColor: Colors.white,
+              onPressed: () => _openForm(),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('New Sale'),
+            )
+          : null,
       body: StreamBuilder<List<SaleModel>>(
         // _limit is intentionally NOT part of this key — see comment in
         // MenuManagementPage for why keying on it caused the scroll jank.
@@ -249,7 +168,15 @@ class _SalesPageState extends State<SalesPage> {
           limit: _limit,
         ),
         builder: (context, snap) {
-          final loading = snap.connectionState == ConnectionState.waiting;
+          // NOT just `connectionState == waiting` — every time _limit grows,
+          // watchAll(...) returns a brand-new Stream instance, and
+          // StreamBuilder briefly flips back to `waiting` for that
+          // resubscribe while still holding the OLD (valid) data. Treating
+          // that as "loading" replaced the real list with short shimmer
+          // placeholders on every "load more", which is what made the
+          // scroll position clamp back near the top. Only the very first
+          // load (genuinely no data yet) should show shimmer.
+          final loading = snap.connectionState == ConnectionState.waiting && !snap.hasData;
           final error = snap.error;
           final all = snap.data ?? const <SaleModel>[];
           final filtered = _query.apply(all);
@@ -294,7 +221,7 @@ class _SalesPageState extends State<SalesPage> {
                     ),
                   ),
                 ),
-                SliverToBoxAdapter(child: _searchAndExport(filtered)),
+                SliverToBoxAdapter(child: _searchBar()),
                 SliverToBoxAdapter(
                   child: SalesFilterBar(
                     query: _query,
@@ -340,8 +267,8 @@ class _SalesPageState extends State<SalesPage> {
                       message: all.isEmpty
                           ? 'Record your first sale to see it here.'
                           : 'Try clearing the search or filters above.',
-                      actionLabel: all.isEmpty ? 'Create New Sale' : null,
-                      onAction: all.isEmpty ? () => _openForm() : null,
+                      actionLabel: (all.isEmpty && canCreateSale) ? 'Create New Sale' : null,
+                      onAction: (all.isEmpty && canCreateSale) ? () => _openForm() : null,
                     ),
                   )
                 else
@@ -382,58 +309,39 @@ class _SalesPageState extends State<SalesPage> {
     );
   }
 
-  Widget _searchAndExport(List<SaleModel> filtered) {
+  Widget _searchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _searchCtrl,
-              onChanged: (v) => setState(() => _query = _query.copyWith(search: v)),
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: 'Search transactions, products, cashiers…',
-                hintStyle: const TextStyle(fontSize: 13),
-                prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                suffixIcon: _query.search.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 18),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          setState(() => _query = _query.copyWith(search: ''));
-                        },
-                      ),
-                isDense: true,
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: AppColors.border),
+      child: TextField(
+        controller: _searchCtrl,
+        onChanged: (v) => setState(() => _query = _query.copyWith(search: v)),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Search transactions, products, cashiers…',
+          hintStyle: const TextStyle(fontSize: 13),
+          prefixIcon: const Icon(Icons.search_rounded, size: 20),
+          suffixIcon: _query.search.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: () {
+                    _searchCtrl.clear();
+                    setState(() => _query = _query.copyWith(search: ''));
+                  },
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-              ),
-            ),
+          isDense: true,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: AppColors.border),
           ),
-          const SizedBox(width: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: IconButton(
-              tooltip: 'Export',
-              icon: const Icon(Icons.file_download_outlined, color: AppColors.teal),
-              onPressed: () => _showExportSheet(filtered),
-            ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: AppColors.border),
           ),
-        ],
+        ),
       ),
     );
   }
