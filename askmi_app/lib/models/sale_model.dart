@@ -28,12 +28,40 @@ class SaleModel {
 
   factory SaleModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
+
+    // POS transaction?
+    final isPos = d['type'] == 'pos';
+
+    String product = '';
+    int quantity = 0;
+    double unitPrice = 0;
+    double amount = 0;
+
+    if (isPos) {
+      final items = (d['items'] as List?) ?? [];
+
+      if (items.isNotEmpty) {
+        final first = Map<String, dynamic>.from(items.first);
+
+        product = first['name'] ?? '';
+        quantity = (first['quantity'] ?? 0) as int;
+        unitPrice = (first['unitPrice'] ?? 0).toDouble();
+      }
+
+      amount = (d['total'] ?? 0).toDouble();
+    } else {
+      product = _asString(d['product']);
+      quantity = ((d['quantity'] ?? 0) as num).toInt();
+      unitPrice = (d['unitPrice'] ?? 0).toDouble();
+      amount = (d['amount'] ?? 0).toDouble();
+    }
+
     return SaleModel(
       id: doc.id,
-      product: _asString(d['product']),
-      quantity: ((d['quantity'] ?? 0) as num).toInt(),
-      unitPrice: (d['unitPrice'] ?? 0).toDouble(),
-      amount: (d['amount'] ?? 0).toDouble(),
+      product: product,
+      quantity: quantity,
+      unitPrice: unitPrice,
+      amount: amount,
       paymentMethod: _asString(d['paymentMethod'], 'Cash'),
       branch: _asString(d['branch']),
       cashierUid: _asString(d['cashierUid']),

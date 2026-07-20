@@ -54,6 +54,7 @@ class _CashierPosPageState extends State<CashierPosPage> {
   // `limit`, so edits stay real-time while the grid still "pages".
   static const _pageSize = 60;
   int _limit = _pageSize;
+  bool _reachedEnd = false;
 
   @override
   void initState() {
@@ -73,8 +74,16 @@ class _CashierPosPageState extends State<CashierPosPage> {
 
   void _maybeLoadMore() {
     if (!_scrollCtrl.hasClients) return;
-    final nearBottom =
-        _scrollCtrl.position.pixels >= _scrollCtrl.position.maxScrollExtent - 300;
+    if (_reachedEnd) return; // nothing left to fetch — don't keep bumping _limit
+    final maxExtent = _scrollCtrl.position.maxScrollExtent;
+    // maxExtent == 0 means the grid doesn't even fill the viewport yet (few
+    // items, or layout hasn't settled) — NOT "the user scrolled to the
+    // bottom". Without this check, `pixels (0) >= maxExtent (0) - 300` is
+    // true on every frame the grid is short, bumping _limit repeatedly for
+    // no reason (harmless now that _limit isn't in the StreamBuilder's key,
+    // but still pointless churn).
+    if (maxExtent <= 0) return;
+    final nearBottom = _scrollCtrl.position.pixels >= maxExtent - 300;
     if (nearBottom) setState(() => _limit += _pageSize);
   }
 
@@ -133,6 +142,25 @@ class _CashierPosPageState extends State<CashierPosPage> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
       }
     } catch (e) {
+      // Was previously swallowed entirely — only a generic snackbar shown,
+      // with no trace of what actually failed. Logging it here so the
+      // real exception is visible in the browser console for debugging.
+      //
+      // NOTE: exceptions thrown inside `runTransaction`'s callback (in
+      // PosSalesRepository.checkout) cross a JS<->Dart interop boundary on
+      // web, which sometimes boxes the real error behind a generic
+      // "Dart exception thrown from converted Future" wrapper. That
+      // wrapper exposes the real thing via dynamic `.error`/`.stack`
+      // properties, so pull those out explicitly rather than just
+      // printing `e` and getting the unhelpful wrapper text.
+      debugPrint('Checkout failed: $e');
+      try {
+        final dynamic boxed = e;
+        debugPrint('Checkout failed — boxed error: ${boxed.error}');
+        debugPrint('Checkout failed — boxed stack: ${boxed.stack}');
+      } catch (_) {
+        // e didn't have those properties — it was already the real error.
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -164,7 +192,20 @@ class _CashierPosPageState extends State<CashierPosPage> {
           final categories = categorySnap.data ?? const <MenuCategoryModel>[];
 
           return StreamBuilder<List<MenuItemModel>>(
-            key: ValueKey('pos_${profile.branch}_${_refreshToken}_$_limit'),
+            // _limit deliberately excluded from the key: MenuRepository
+            // applies it client-side (a plain .take(limit) after the
+            // snapshot arrives), so it has no effect on the underlying
+            // Firestore query. Including it here used to tear down and
+            // recreate the live listener on every scroll-triggered
+            // page-size bump — and, since filtering shrinks the rendered
+            // list enough to look "near the bottom" again, on every
+            // category click too — which is what caused the menu to
+            // briefly flash the permission-denied error on every filter
+            // tap or reload: rapidly destroying/recreating a Firestore
+            // listener on the same query is a known trigger for the SDK's
+            // transient internal-state errors. Only `_refreshToken` (the
+            // deliberate manual refresh) should recreate this listener.
+            key: ValueKey('pos_${profile.branch}_$_refreshToken'),
             stream: _menuRepo.watchAllForBranch(
               branch: profile.branch,
               orderByField: 'displayOrder',
@@ -176,6 +217,9 @@ class _CashierPosPageState extends State<CashierPosPage> {
               final all = snap.data ?? const <MenuItemModel>[];
               final filtered = _filter(all);
               final reachedEnd = all.length < _limit;
+              _reachedEnd = reachedEnd; // plain assignment: only read by
+              // _maybeLoadMore's scroll callback, not part of the widget
+              // tree itself, so no setState/rebuild needed here.
 
               final menuPanel = _MenuPanel(
                 searchCtrl: _searchCtrl,
@@ -194,6 +238,7 @@ class _CashierPosPageState extends State<CashierPosPage> {
                   setState(() {
                     _refreshToken++;
                     _limit = _pageSize;
+                    _reachedEnd = false;
                   });
                   await Future<void>.delayed(const Duration(milliseconds: 500));
                 },
@@ -352,7 +397,7 @@ class _MenuPanel extends StatelessWidget {
                     maxCrossAxisExtent: 190,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
-                    childAspectRatio: 0.82,
+                    childAspectRatio: 0.68,
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, i) => const ShimmerBox(height: double.infinity, borderRadius: 16),
@@ -378,7 +423,7 @@ class _MenuPanel extends StatelessWidget {
                     maxCrossAxisExtent: 190,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
-                    childAspectRatio: 0.82,
+                    childAspectRatio: 0.68,
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, i) {

@@ -104,6 +104,93 @@ class _ReportsPageState extends State<ReportsPage> {
 
   UserModel? get _currentProfile => context.read<UserProfileProvider>().profile;
 
+  // ── Cached stream instances ──────────────────────────────────────────
+  // repo.watchAll(...) returns a brand-new Stream (a fresh Firestore
+  // .snapshots() listener) on every call. Calling it straight inside
+  // build() — as each tab used to do — meant every setState (including
+  // the one _maybeLoadMore fires while scrolling, just to grow _limit)
+  // handed StreamBuilder a NEW Stream instance on every rebuild.
+  // StreamBuilder treats a changed stream as "resubscribe": it briefly
+  // drops connectionState back to `waiting`, which swapped the real
+  // (long) list out for the much shorter _loadingSkeleton() for a frame —
+  // collapsing the ListView's scroll extent below the current scroll
+  // offset and snapping the view back toward the top mid-scroll.
+  //
+  // Caching each stream here, keyed by the same identity that already
+  // drove each StreamBuilder's `key:` (branch + refreshToken), means
+  // scrolling/pagination/tab/range/filter changes reuse the same
+  // long-lived subscription instead of restarting it — only an actual
+  // branch switch or explicit pull-to-refresh opens a new one.
+  Stream<List<SaleModel>>? _salesStream;
+  String? _salesStreamKey;
+  Stream<List<SaleModel>> _salesStreamFor(String? branch) {
+    final key = '${branch}_$_refreshToken';
+    if (_salesStreamKey != key) {
+      _salesStreamKey = key;
+      _salesStream = _salesRepo.watchAll(branch: branch, orderByField: 'createdAt');
+    }
+    return _salesStream!;
+  }
+
+  Stream<List<InventoryModel>>? _inventoryStream;
+  String? _inventoryStreamKey;
+  Stream<List<InventoryModel>> _inventoryStreamFor(String? branch) {
+    final key = '${branch}_$_refreshToken';
+    if (_inventoryStreamKey != key) {
+      _inventoryStreamKey = key;
+      _inventoryStream = _inventoryRepo.watchAll(branch: branch, orderByField: 'date');
+    }
+    return _inventoryStream!;
+  }
+
+  Stream<List<ProductModel>>? _productsStream;
+  String? _productsStreamKey;
+  Stream<List<ProductModel>> _productsStreamFor(String? branch) {
+    final key = '${branch}_$_refreshToken';
+    if (_productsStreamKey != key) {
+      _productsStreamKey = key;
+      _productsStream = _productsRepo.watchAll(branch: branch);
+    }
+    return _productsStream!;
+  }
+
+  // Products tab also needs sales, but at its OWN cache slot — kept
+  // separate from _salesStream so the Sales tab and the Products tab can
+  // never end up silently sharing (and racing to overwrite) one
+  // subscription.
+  Stream<List<SaleModel>>? _productsSalesStream;
+  String? _productsSalesStreamKey;
+  Stream<List<SaleModel>> _productsSalesStreamFor(String? branch) {
+    final key = '${branch}_$_refreshToken';
+    if (_productsSalesStreamKey != key) {
+      _productsSalesStreamKey = key;
+      _productsSalesStream = _salesRepo.watchAll(branch: branch, orderByField: 'createdAt');
+    }
+    return _productsSalesStream!;
+  }
+
+  Stream<List<SaleModel>>? _bpSalesStream;
+  String? _bpSalesStreamKey;
+  Stream<List<SaleModel>> _bpSalesStreamFor() {
+    final key = '$_refreshToken';
+    if (_bpSalesStreamKey != key) {
+      _bpSalesStreamKey = key;
+      _bpSalesStream = _salesRepo.watchAll(orderByField: 'createdAt');
+    }
+    return _bpSalesStream!;
+  }
+
+  Stream<List<InventoryModel>>? _bpInventoryStream;
+  String? _bpInventoryStreamKey;
+  Stream<List<InventoryModel>> _bpInventoryStreamFor() {
+    final key = '$_refreshToken';
+    if (_bpInventoryStreamKey != key) {
+      _bpInventoryStreamKey = key;
+      _bpInventoryStream = _inventoryRepo.watchAll();
+    }
+    return _bpInventoryStream!;
+  }
+
   bool get _isOwner => (_currentProfile?.role ?? '').toLowerCase() == 'owner';
   bool get _isManager => (_currentProfile?.role ?? '').toLowerCase() == 'manager';
 
@@ -601,7 +688,7 @@ class _ReportsPageState extends State<ReportsPage> {
   Widget _salesTab(String? branch, String branchLabel) {
     return StreamBuilder<List<SaleModel>>(
       key: ValueKey('rep_sales_${branch}_$_refreshToken'),
-      stream: _salesRepo.watchAll(branch: branch, orderByField: 'createdAt'),
+      stream: _salesStreamFor(branch),
       builder: (context, snap) {
         final loading = snap.connectionState == ConnectionState.waiting;
         final error = snap.error;
@@ -829,7 +916,7 @@ class _ReportsPageState extends State<ReportsPage> {
   Widget _inventoryTab(String? branch, String branchLabel) {
     return StreamBuilder<List<InventoryModel>>(
       key: ValueKey('rep_inventory_${branch}_$_refreshToken'),
-      stream: _inventoryRepo.watchAll(branch: branch, orderByField: 'date'),
+      stream: _inventoryStreamFor(branch),
       builder: (context, snap) {
         final loading = snap.connectionState == ConnectionState.waiting;
         final error = snap.error;
@@ -1061,11 +1148,11 @@ class _ReportsPageState extends State<ReportsPage> {
   Widget _productsTab(String? branch, String branchLabel) {
     return StreamBuilder<List<ProductModel>>(
       key: ValueKey('rep_products_${branch}_$_refreshToken'),
-      stream: _productsRepo.watchAll(branch: branch),
+      stream: _productsStreamFor(branch),
       builder: (context, prodSnap) {
         return StreamBuilder<List<SaleModel>>(
           key: ValueKey('rep_products_sales_${branch}_$_refreshToken'),
-          stream: _salesRepo.watchAll(branch: branch, orderByField: 'createdAt'),
+          stream: _productsSalesStreamFor(branch),
           builder: (context, saleSnap) {
             final loading = prodSnap.connectionState == ConnectionState.waiting ||
                 saleSnap.connectionState == ConnectionState.waiting;
@@ -1349,11 +1436,11 @@ class _ReportsPageState extends State<ReportsPage> {
   Widget _branchPerformanceTab() {
     return StreamBuilder<List<SaleModel>>(
       key: ValueKey('rep_bp_sales_$_refreshToken'),
-      stream: _salesRepo.watchAll(orderByField: 'createdAt'),
+      stream: _bpSalesStreamFor(),
       builder: (context, saleSnap) {
         return StreamBuilder<List<InventoryModel>>(
           key: ValueKey('rep_bp_inv_$_refreshToken'),
-          stream: _inventoryRepo.watchAll(),
+          stream: _bpInventoryStreamFor(),
           builder: (context, invSnap) {
             final loading =
                 saleSnap.connectionState == ConnectionState.waiting || invSnap.connectionState == ConnectionState.waiting;
