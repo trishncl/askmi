@@ -20,13 +20,10 @@ import '../../repositories/products_repository.dart';
 import '../../repositories/sales_repository.dart';
 import '../dashboard/widgets/kpi_card.dart';
 import '../dashboard/widgets/section_card.dart';
-import '../../models/report_model.dart';
-import '../../repositories/reports_repository.dart';
 import '../inventory/widgets/stock_status_badge.dart';
 import '../sales/widgets/payment_badge.dart';
 import 'branch_report_details_page.dart';
 import 'report_filters.dart';
-import 'submitted_reports_page.dart';
 import 'widgets/branch_performance_card.dart';
 import 'widgets/expandable_record_card.dart';
 
@@ -51,7 +48,6 @@ class _ReportsPageState extends State<ReportsPage> {
   final _salesRepo = SalesRepository();
   final _inventoryRepo = InventoryRepository();
   final _productsRepo = ProductsRepository();
-  final _reportsRepo = ReportsRepository();
 
   ReportTabType _tab = ReportTabType.sales;
   ReportDateRange _range = ReportDateRange.today();
@@ -232,10 +228,10 @@ class _ReportsPageState extends State<ReportsPage> {
   // ───────────────────────── shared header pieces ─────────────────────────
 
   Widget _pageHeader() {
-    return Row(
+    return const Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -245,54 +241,7 @@ class _ReportsPageState extends State<ReportsPage> {
             ],
           ),
         ),
-        if (_isOwner) _submittedReportsEntryPoint(),
       ],
-    );
-  }
-
-  /// These are Manager → Owner report NOTES (financial/analytics/inventory
-  /// write-ups with a reviewed flag) — a different thing from the
-  /// Sales/Inventory/Products/Branch Performance analytics this page shows.
-  /// Kept as its own screen rather than folded in as a fifth tab so the two
-  /// don't get confused with each other.
-  Widget _submittedReportsEntryPoint() {
-    return StreamBuilder<List<ReportModel>>(
-      stream: _reportsRepo.watchAll(orderByField: 'createdAt'),
-      builder: (context, snap) {
-        final pending = (snap.data ?? const <ReportModel>[]).where((r) => !r.reviewed).length;
-        return Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              IconButton(
-                tooltip: 'Manager Submissions',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SubmittedReportsPage()),
-                ),
-                icon: const Icon(Icons.mark_email_unread_outlined, color: AppColors.teal),
-                style: IconButton.styleFrom(
-                  backgroundColor: AppColors.lightSuccess,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              if (pending > 0)
-                Positioned(
-                  top: -2,
-                  right: -2,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                    decoration: BoxDecoration(color: AppColors.red, borderRadius: BorderRadius.circular(10)),
-                    child: Text(
-                      pending > 9 ? '9+' : '$pending',
-                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
     );
   }
 

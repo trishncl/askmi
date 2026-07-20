@@ -10,9 +10,11 @@ import '../../repositories/reports_repository.dart';
 import '../reports/widgets/submitted_report_card.dart';
 
 /// PHASE 5 — Manager & Cashier. Manager GENERATES and submits a report to
-/// the Owner (opposite of the Owner's SubmittedReportsPage) — sender name
-/// and branch are auto-filled from the signed-in Manager's own profile,
-/// never editable, so a submission can't be misattributed.
+/// the Owner — sender name and branch are auto-filled from the signed-in
+/// Manager's own profile, never editable, so a submission can't be
+/// misattributed. (There is no Owner-side inbox for these anymore — the
+/// Owner's Reports screen dropped that entry point; submissions still
+/// write to the same `reports` collection if that view comes back later.)
 ///
 /// Standalone Scaffold (own AppBar) since ManagerShell doesn't exist yet —
 /// drop this into that shell's body once it's built, same as every Owner
