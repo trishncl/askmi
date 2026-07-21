@@ -13,7 +13,6 @@ import '../sales/sales_page.dart';
 import 'app_drawer.dart';
 import 'coming_soon_page.dart';
 import 'floating_bottom_nav.dart';
-import 'speed_dial_fab.dart';
 import '../settings/settings_page.dart';
 
 /// PHASE 4 — the Owner's container: AppBar (branch selector,
@@ -81,49 +80,11 @@ class _OwnerShellState extends State<OwnerShell> {
     }
   }
 
-  /// Dashboard-only. Every other module supplies its own single-purpose
-  /// FAB (e.g. Sales has "New Sale"), and two stacked FABs overlap — they
-  /// sit in the same Scaffold slot, so both become harder to hit.
-  Widget? _buildFab() {
-    if (_index != 0) return null;
-    return SpeedDialFab(
-      actions: [
-        SpeedDialAction(
-          label: 'Add Sale',
-          icon: Icons.point_of_sale_rounded,
-          // Sales exists now, so jump to it rather than showing the old
-          // "later sprint" placeholder.
-          onTap: () => setState(() => _index = 1),
-        ),
-        SpeedDialAction(
-          label: 'Add Inventory',
-          icon: Icons.inventory_rounded,
-          onTap: () => _notYet(context, 'Add Inventory'),
-        ),
-        SpeedDialAction(
-          label: 'Add Menu Item',
-          icon: Icons.restaurant_menu_rounded,
-          // Routes through _selectIndex (not a bare setState) so that if
-          // "All Branches" is currently selected, it gets nudged to a
-          // real branch the same way the drawer/bottom-nav do — see
-          // _selectIndex's doc comment.
-          onTap: () => _selectIndex(4),
-        ),
-        SpeedDialAction(
-          label: 'Generate Report',
-          icon: Icons.description_rounded,
-          onTap: () => _notYet(context, 'Generate Report'),
-        ),
-        SpeedDialAction(
-          label: 'Add User',
-          icon: Icons.person_add_alt_1_rounded,
-          // User Management exists now, so jump to it (same pattern as
-          // "Add Sale" above) rather than the old placeholder snackbar.
-          onTap: () => setState(() => _index = 6),
-        ),
-      ],
-    );
-  }
+  /// Dashboard's floating action button was removed per request — no FAB
+  /// on any tab now. Every other module still supplies its own
+  /// single-purpose FAB (e.g. Sales has "New Sale"); this just means the
+  /// Dashboard tab no longer stacks a speed-dial on top of that.
+  Widget? _buildFab() => null;
 
   /// Menu items span every branch's POS catalog in one view — there's no
   /// per-branch picker for this page, it's always "All Branches" (see
@@ -214,6 +175,7 @@ class _OwnerShellState extends State<OwnerShell> {
     );
   }
 
+  // ignore: unused_element
   void _notYet(BuildContext context, String action) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('"$action" is built in a later sprint.')),
