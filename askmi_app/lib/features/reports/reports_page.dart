@@ -213,6 +213,12 @@ class _ReportsPageState extends State<ReportsPage> {
       _tab = ReportTabType.sales;
     }
 
+    // Inventory tab removed from the tab bar (empty/unused) — fall back to
+    // Sales for anyone whose saved/initial state still points at it.
+    if (_tab == ReportTabType.inventory) {
+      _tab = ReportTabType.sales;
+    }
+
     switch (_tab) {
       case ReportTabType.sales:
         return _salesTab(branch, branchLabel);
@@ -248,7 +254,6 @@ class _ReportsPageState extends State<ReportsPage> {
   Widget _tabBar() {
     final tabs = <(ReportTabType, String, IconData)>[
       (ReportTabType.sales, 'Sales', Icons.attach_money_rounded),
-      (ReportTabType.inventory, 'Inventory', Icons.inventory_2_outlined),
       (ReportTabType.products, 'Products', Icons.restaurant_menu_rounded),
       if (_canViewBranchPerformance)
         (ReportTabType.branchPerformance, 'Branch Performance', Icons.trending_up_rounded),
